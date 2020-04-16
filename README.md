@@ -75,6 +75,15 @@ Copy `.editorconfig` from this project
 }
 ```
 
+## Danger
+`dangerfile.ts`
+```typescript
+import { danger, warn, message, fail, markdown, schedule, peril, results } from 'danger';
+import { rules } from 'styleguide-backend-config/dist/dangers';
+
+rules({ danger, warn, message, fail, markdown, schedule, peril, results });
+```
+
 ## License
 
 This project is licensed under [MIT](./LICENSE).
