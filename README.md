@@ -8,7 +8,7 @@ Configuration files for [styleguide](https://github.com/AckeeCZ/styleguide) enfo
 
 ## Setup
 ```
-npm i -D git+ssh://git@github.com:AckeeCZ/styleguide-backend-config.git 
+npm i -D git+ssh://git@github.com:AckeeCZ/styleguide-backend-config.git
 ```
 
 ## ESLint
@@ -41,6 +41,20 @@ module.exports = require('styleguide-backend-config/dist/prettier')
 }
 ```
 
+## Editorconfig
+`npm install -D eclint`
+
+Copy `.editorconfig` from this project
+
+```jsonc
+{
+    // npm tasks
+    "cs:eclint:check": "eclint check '**/*'",
+    "cs:eclint:fix": "eclint fix '**/*'",
+}
+```
+
+
 ## Husky
 `.huskyrc.json`
 ```json
@@ -56,9 +70,9 @@ module.exports = require('styleguide-backend-config/dist/prettier')
 ```json
 {
   "*.ts": ["prettier --write", "eslint --fix"],
-  "*.{ts,js,json,md}": "prettier --write"
+  "*.{ts,js,json,md}": "prettier --write",
+  "*": ["eclint fix", "eclint check"]
 }
-
 ```
 
 ## License
