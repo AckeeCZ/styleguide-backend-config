@@ -110,7 +110,7 @@ const formatMessage = (m: Offense) => {
             return `🌳 Feature type\`${
                 m.branchType
             }\` is not one of the [allowed types](${BRANCH_GUIDE}): ${branchTypes.map(t => `\`${t}\``).join(', ')}.`;
-        case OffenseType.BRANCH_TYPE:
+        case OffenseType.BRANCH_NOT_DELETED:
             return `🗑️ Merging this MR will not delete the source branch.`;
         case OffenseType.COMMIT_MISSING_TRACKER_REFERENCE:
             return `🎫 Commit ${m.sha} does not have an [issue reference](${MSG_GUIDE}) for any issue.`;
