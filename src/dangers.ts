@@ -1,7 +1,15 @@
 import { get } from 'https';
 import * as Danger from 'danger';
-import { isMisspelled, getCorrectionsForMisspelling } from 'spellchecker';
-
+import {
+    Text,
+    validateText,
+    constructSettingsForText,
+    getDefaultSettings,
+    mergeSettings,
+    getLanguagesForExt,
+  } from 'cspell-lib'
+  import { extname, resolve } from 'path'
+  import { readFileSync } from 'fs'
 const branchTypes = ['fix', 'feat', 'chore', 'docs', 'style', 'refactor', 'perf', 'test'];
 
 const BRANCH_GUIDE = 'https://github.com/AckeeCZ/styleguide/blob/master/git/guides/branch-naming.md';
@@ -31,24 +39,31 @@ const getGitmoji = () =>
         });
     });
 
-interface Typo {
-    word: string;
-    misspelled: boolean;
-    suggestions: string[];
-}
+    const getTyposForText = async (text: string, filename: string) => {
+        const config = constructSettingsForText(
+          mergeSettings(getDefaultSettings(), {
+            ignoreWords: [],
+          }),
+          text,
+          getLanguagesForExt(extname(filename))
+        )
+        const offsets = await validateText(text, config)
+        return Text.calculateTextDocumentOffsets(filename, text, offsets)
+      }
 
 enum OffenseType {
-    BRANCH_FORMAT,
-    BRANCH_TYPE,
-    BRANCH_NOT_DELETED,
-    COMMIT_MISSING_TRACKER_REFERENCE,
-    COMMIT_BRANCH_TRACKER_REFERENCE_MISMATCH,
-    COMMIT_MESSAGE_LENGTH,
-    COMMIT_MESSAGE_FORMAT,
-    COMMIT_MESSAGE_INVALID_GITMOJI,
-    COMMIT_MESSAGE_TYPO,
-    COMMIT_INVALID_AUTHOR_EMAIL,
-    COMMIT_FIXUP,
+    BRANCH_FORMAT = 'BRANCH_FORMAT',
+    BRANCH_TYPE = 'BRANCH_TYPE',
+    BRANCH_NOT_DELETED = 'BRANCH_NOT_DELETED',
+    COMMIT_MISSING_TRACKER_REFERENCE = 'COMMIT_MISSING_TRACKER_REFERENCE',
+    COMMIT_BRANCH_TRACKER_REFERENCE_MISMATCH = 'COMMIT_BRANCH_TRACKER_REFERENCE_MISMATCH',
+    COMMIT_MESSAGE_LENGTH = 'COMMIT_MESSAGE_LENGTH',
+    COMMIT_MESSAGE_FORMAT = 'COMMIT_MESSAGE_FORMAT',
+    COMMIT_MESSAGE_INVALID_GITMOJI = 'COMMIT_MESSAGE_INVALID_GITMOJI',
+    COMMIT_MESSAGE_TYPO = 'COMMIT_MESSAGE_TYPO',
+    COMMIT_INVALID_AUTHOR_EMAIL = 'COMMIT_INVALID_AUTHOR_EMAIL',
+    COMMIT_FIXUP = 'COMMIT_FIXUP',
+    CODE_TYPO = 'CODE_TYPO',
 }
 type Offense =
     | {
@@ -89,9 +104,12 @@ type Offense =
       }
     | {
           type: OffenseType.COMMIT_MESSAGE_TYPO;
-          sha: string;
-          typos: Typo[];
+          typos: Text.TextDocumentOffset[];
       }
+      | {
+        type: OffenseType.CODE_TYPO;
+        typos: Text.TextDocumentOffset[];
+    }
     | {
           type: OffenseType.COMMIT_INVALID_AUTHOR_EMAIL;
           sha: string;
@@ -128,26 +146,28 @@ const formatMessage = (m: Offense) => {
             } does not seem to use [Gitmoji](${MSG_GUIDE}). Expected unicode emoji symbol, got \`${
                 m.found
             }\` (\`${codes(m.found)}\`).`;
-        case OffenseType.COMMIT_MESSAGE_TYPO:
-            return `🔤 Commit ${m.sha} might have typos: ${m.typos
-                .map(
-                    t =>
-                        `\`${t.word}\` (${t.suggestions
-                            .slice(0, 3)
-                            .map(s => `\`${s}\``)
-                            .join(', ')}?)`
-                )
-                .join(', ')}`;
+        case OffenseType.CODE_TYPO: {
+            const [first, ...rest] = m.typos
+            const occurrence = `🔤 \`${first.text}\` might be a typo.`
+            const reps = `Same word is repeated ${rest.length} more times in ${rest.map(t => `${t.uri}${t.row}`).join(', ')}`
+            return `${occurrence} ${rest.length > 0 ? reps : ''}`;
+        }
+        case OffenseType.COMMIT_MESSAGE_TYPO: {
+            const [first, ...rest] = m.typos
+            const occurrence = `🔤 \`${first.text}\` in ${first.uri}'s commit message might be a typo.`
+            const reps = `Same word is repeated ${rest.length} more times in ${rest.map(t => t.uri).join(', ')}`
+            return `${occurrence} ${rest.length > 0 ? reps : ''}`;
+        }
         case OffenseType.COMMIT_INVALID_AUTHOR_EMAIL:
             return `✉️ Commit ${m.sha} has a fishy email \`${m.found}\`. Does not [match](${COMMIT_GUIDE}) \`${EMAIL_REG}\`.`;
         case OffenseType.COMMIT_FIXUP:
             return `🚧 Commit ${m.sha} is a fixup, skipping checks.`;
         default:
-            return `MISSING MESSAGE FOR ${m.type}!`;
+            return `MISSING MESSAGE FOR ${JSON.stringify(m)}!`;
     }
 };
 
-export const rules = async ({ danger, warn, markdown }: typeof Danger) => {
+export const rules = async ({ danger, warn, markdown, schedule, message }: typeof Danger) => {
     const messages: Offense[] = [];
     const branchName = danger.gitlab.mr.source_branch;
     const [branchMatched, type, issueNumber, description] = branchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
@@ -202,20 +222,6 @@ export const rules = async ({ danger, warn, markdown }: typeof Danger) => {
             messages.push({ type: OffenseType.COMMIT_MESSAGE_INVALID_GITMOJI, sha: commit.sha, found: symbol });
         }
     };
-    const checkTypos = (commit: Danger.GitCommit) => {
-        const typos = (commit.message.match(/\w+/g) ?? [])
-            .map(
-                (word): Typo => ({
-                    word,
-                    misspelled: isMisspelled(word),
-                    suggestions: getCorrectionsForMisspelling(word),
-                })
-            )
-            .filter(data => data.misspelled && data.suggestions.length > 0);
-        if (typos.length > 0) {
-            messages.push({ type: OffenseType.COMMIT_MESSAGE_TYPO, sha: commit.sha, typos: typos });
-        }
-    };
     const checkEmail = (commit: Danger.GitCommit) => {
         if (!commit.author.email.match(EMAIL_REG)) {
             messages.push({
@@ -233,8 +239,45 @@ export const rules = async ({ danger, warn, markdown }: typeof Danger) => {
         checkReferences(commit);
         checkFormat(commit);
         checkEmail(commit);
-        checkTypos(commit);
     });
+
+    schedule(async () => {
+        const commitTypos: Text.TextDocumentOffset[] = []
+        for (const commit of danger.git.commits) {
+          commitTypos.push(...await getTyposForText(commit.message, commit.sha))
+        }
+        if (commitTypos.length === 0) return;
+        Object.values(
+            commitTypos.reduce(
+              (r, v) => ((r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v), r),
+              {} as Record<string, Text.TextDocumentOffset[]>
+            )
+          ).forEach(typos => {
+              message(formatMessage({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos }))
+          })
+      })
+      schedule(async () => {
+        const allTypos: Text.TextDocumentOffset[] = []
+        for (const filename of [
+          ...danger.git.created_files,
+          ...danger.git.modified_files,
+        ]) {
+          if (filename.match(/package-lock.json/)) {
+            continue
+          }
+          const contents = readFileSync(resolve(__dirname, '..', filename), 'utf8')
+          allTypos.push(...(await getTyposForText(contents, filename)))
+        }
+        Object.values(
+          allTypos.reduce(
+            (r, v) => ((r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v), r),
+            {} as Record<string, Text.TextDocumentOffset[]>
+          )
+        ).forEach(typos => {
+          warn(formatMessage({ type: OffenseType.CODE_TYPO, typos }), typos[0].uri, typos[0].row)
+        })
+      })
+
 
     Object.values(OffenseType).map(type => {
         const selected = messages.filter(m => m.type === type).map(formatMessage);
