@@ -67,17 +67,18 @@ const getTyposForText = async (text: string, filename: string) => {
     return Text.calculateTextDocumentOffsets(filename, text, offsets);
 };
 
-const groupTypos = (typos: Text.TextDocumentOffset[]) => Object.values(
-    typos.reduce(
-        (r, v) => (
-            (
-                r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])
-            ).push(v),
-            r
-        ),
-        {} as Record<string, Text.TextDocumentOffset[]>
-    )
-)
+const groupTypos = (typos: Text.TextDocumentOffset[]) =>
+    Object.values(
+        typos.reduce(
+            (r, v) => (
+                (
+                    r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])
+                ).push(v),
+                r
+            ),
+            {} as Record<string, Text.TextDocumentOffset[]>
+        )
+    );
 
 enum OffenseType {
     BRANCH_FORMAT = 'BRANCH_FORMAT',
@@ -148,47 +149,80 @@ type Offense =
           sha: string;
       };
 
-const formatMessage = (m: Offense) => {
+const formatMessage = (
+    m: Offense
+): { message: string; severity: 'message' | 'warn' | 'fail', url?: string, ln?: number } => {
     switch (m.type) {
         case OffenseType.BRANCH_FORMAT:
-            return `🌳 Branch name \`${m.branchName}\` does not follow the [format](${BRANCH_GUIDE}) \`{type}/{issue-id}-{feature-name}\`.`;
+            return {
+                message: `🌳 Branch name \`${m.branchName}\` does not follow the [format](${BRANCH_GUIDE}) \`{type}/{issue-id}-{feature-name}\`.`,
+                severity: 'warn',
+            };
         case OffenseType.BRANCH_TYPE:
-            return `🌳 Feature type\`${
-                m.branchType
-            }\` is not one of the [allowed types](${BRANCH_GUIDE}): ${branchTypes
-                .map(t => `\`${t}\``)
-                .join(', ')}.`;
+            return {
+                message: `🌳 Feature type\`${
+                    m.branchType
+                }\` is not one of the [allowed types](${BRANCH_GUIDE}): ${branchTypes
+                    .map(t => `\`${t}\``)
+                    .join(', ')}.`,
+                severity: 'warn',
+            };
         case OffenseType.BRANCH_NOT_DELETED:
-            return `🗑️ Merging this MR will not delete the source branch.`;
+            return {
+                message: `🗑️ Merging this MR will not delete the source branch.`,
+                severity: 'message',
+            };
         case OffenseType.COMMIT_MISSING_TRACKER_REFERENCE:
-            return `🎫 Commit ${m.sha} does not have an [issue reference](${MSG_GUIDE}) for any issue.`;
+            return {
+                message: `🎫 Commit ${m.sha} does not have an [issue reference](${MSG_GUIDE}) for any issue.`,
+                severity: 'message',
+            };
         case OffenseType.COMMIT_BRANCH_TRACKER_REFERENCE_MISMATCH:
-            return `🎫 Commit ${
-                m.sha
-            } does not have an [issue reference](${MSG_GUIDE}) for the issue \`#${
-                m.expectedReference
-            }\` from source branch, found ${m.found
-                .map(r => `\`#${r}\``)
-                .join(', ')}.`;
+            return {
+                message: `🎫 Commit ${
+                    m.sha
+                } does not have an [issue reference](${MSG_GUIDE}) for the issue \`#${
+                    m.expectedReference
+                }\` from source branch, found ${m.found
+                    .map(r => `\`#${r}\``)
+                    .join(', ')}.`,
+                severity: 'message',
+            };
         case OffenseType.COMMIT_MESSAGE_LENGTH:
-            return `💬 Commit ${m.sha} exceeds maximum length on first line ${
-                m.length
-            }/${50}.`;
+            return {
+                message: `💬 Commit ${
+                    m.sha
+                } exceeds maximum length on first line ${m.length}/${50}.`,
+                severity: 'warn',
+            };
         case OffenseType.COMMIT_MESSAGE_FORMAT:
-            return `💬 Commit ${m.sha} has odd formatting. \n${m.diff}`;
+            return {
+                message: `💬 Commit ${m.sha} has odd formatting. \n${m.diff}`,
+                severity: 'warn',
+            };
         case OffenseType.COMMIT_MESSAGE_INVALID_GITMOJI:
-            return `💬 Commit ${
-                m.sha
-            } does not seem to use [Gitmoji](${MSG_GUIDE}). Expected unicode emoji symbol, got \`${
-                m.found
-            }\` (\`${codes(m.found)}\`).`;
+            return {
+                message: `💬 Commit ${
+                    m.sha
+                } does not seem to use [Gitmoji](${MSG_GUIDE}). Expected unicode emoji symbol, got \`${
+                    m.found
+                }\` (\`${codes(m.found)}\`).`,
+                severity: 'warn',
+            };
         case OffenseType.CODE_TYPO: {
             const [first, ...rest] = m.typos;
             const occurrence = `🔤 \`${first.text}\` might be a typo.`;
             const reps = `Same word is repeated ${
                 rest.length
-            } more times in ${rest.map(t => `\`${t.uri}:${t.row}\``).join(', ')}`;
-            return `${occurrence} ${rest.length > 0 ? reps : ''}`;
+            } more times in ${rest
+                .map(t => `\`${t.uri}:${t.row}\``)
+                .join(', ')}`;
+            return {
+                message: `${occurrence} ${rest.length > 0 ? reps : ''}`,
+                severity: 'message',
+                url: first.uri,
+                ln: first.row,
+            };
         }
         case OffenseType.COMMIT_MESSAGE_TYPO: {
             const [first, ...rest] = m.typos;
@@ -196,14 +230,26 @@ const formatMessage = (m: Offense) => {
             const reps = `Same word is repeated ${
                 rest.length
             } more times in ${rest.map(t => t.uri).join(', ')}`;
-            return `${occurrence} ${rest.length > 0 ? reps : ''}`;
+            return {
+                message: `${occurrence} ${rest.length > 0 ? reps : ''}`,
+                severity: 'message',
+            };
         }
         case OffenseType.COMMIT_INVALID_AUTHOR_EMAIL:
-            return `✉️ Commit ${m.sha} has a fishy email \`${m.found}\`. Does not [match](${COMMIT_GUIDE}) \`${EMAIL_REG}\`.`;
+            return {
+                message: `✉️ Commit ${m.sha} has a fishy email \`${m.found}\`. Does not [match](${COMMIT_GUIDE}) \`${EMAIL_REG}\`.`,
+                severity: 'warn',
+            };
         case OffenseType.COMMIT_FIXUP:
-            return `🚧 Commit ${m.sha} is a fixup, skipping checks.`;
+            return {
+                message: `🚧 Commit ${m.sha} is a fixup, skipping checks.`,
+                severity: 'message',
+            };
         default:
-            return `MISSING MESSAGE FOR ${JSON.stringify(m)}!`;
+            return {
+                message: `MISSING MESSAGE FOR ${JSON.stringify(m)}!`,
+                severity: 'fail',
+            };
     }
 };
 
@@ -222,10 +268,10 @@ export const rules = async ({
         branchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
     if (!branchMatched) {
         messages.push({ branchName, type: OffenseType.BRANCH_FORMAT });
-    }
-    if (!branchTypes.includes(type)) {
+    } else if (!branchTypes.includes(type)) {
         messages.push({ branchType: type, type: OffenseType.BRANCH_TYPE });
     }
+
     if (danger.gitlab.mr.should_remove_source_branch) {
         messages.push({ type: OffenseType.BRANCH_NOT_DELETED });
     }
@@ -316,18 +362,22 @@ export const rules = async ({
         checkReferences(commit);
         checkFormat(commit);
         checkEmail(commit);
-        await checkMessageTypos(commit)
+        await checkMessageTypos(commit);
     }
 
-    messages.push(...groupTypos(commitTypos).map(typos => ({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos } as const)))
+    messages.push(
+        ...groupTypos(commitTypos).map(
+            typos => ({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos } as const)
+        )
+    );
     // Report offenses
     Object.values(OffenseType).map(type => {
         const selected = messages
             .filter(m => m.type === type)
             .map(formatMessage);
-        if (selected.length > 1) selected.unshift('');
-        const msg = selected.join('\n - ');
-        if (msg) warn(msg);
+        if (selected.length === 0) return
+        const msg = [...(selected.length > 1 ? ['']: []),...selected.map(s => s.message)].join('\n - ');
+        ({fail, message, warn})[selected[0].severity](msg)
     });
 
     // Find and report code typos
@@ -346,10 +396,7 @@ export const rules = async ({
         codeTypos.push(...(await getTyposForText(contents, filename)));
     }
     groupTypos(codeTypos).forEach(typos => {
-        message(
-            formatMessage({ type: OffenseType.CODE_TYPO, typos }),
-            typos[0].uri,
-            typos[0].row
-        );
+        const msg = formatMessage({ type: OffenseType.CODE_TYPO, typos });
+        ({fail, message, warn})[msg.severity](msg.message, msg.url, msg.ln)
     });
 };
