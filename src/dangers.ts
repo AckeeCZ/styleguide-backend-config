@@ -7,6 +7,7 @@ import {
     getDefaultSettings,
     mergeSettings,
     getLanguagesForExt,
+    TextDocumentOffset,
 } from 'cspell-lib';
 import { extname, resolve } from 'path';
 import { readFileSync } from 'fs';
@@ -37,8 +38,9 @@ const codes = (str: string) =>
         .map(i => `\\${str.charCodeAt(i)}`)
         .join('');
 
+type Gitmoji = Record<'emoji' | 'code', string>;
 const getGitmoji = () =>
-    new Promise<Array<Record<'emoji' | 'code', string>>>((resolve, reject) => {
+    new Promise<Array<Gitmoji>>((resolve, reject) => {
         get(
             'https://raw.githubusercontent.com/carloscuesta/gitmoji/master/src/data/gitmojis.json',
             res => {
@@ -55,10 +57,20 @@ const getGitmoji = () =>
         );
     });
 
+const absolutePath = (relPath: string) =>
+    resolve(__dirname, '..', '..', '..', relPath); // node_modules / styleguide-backend-config / dist
+
+const ignoreWords =
+    readFileSync(absolutePath('package-lock.json'), 'utf8')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[\-\_/]/g, ' ')
+        .match(/\w+/g) ?? [];
+
 const getTyposForText = async (text: string, filename: string) => {
     const config = constructSettingsForText(
         mergeSettings(getDefaultSettings(), {
-            ignoreWords: [],
+            ignoreWords,
+            allowCompoundWords: true, // allow dangerfile as danger-file
         }),
         text,
         getLanguagesForExt(extname(filename))
@@ -92,6 +104,7 @@ enum OffenseType {
     COMMIT_MESSAGE_TYPO = 'COMMIT_MESSAGE_TYPO',
     COMMIT_INVALID_AUTHOR_EMAIL = 'COMMIT_INVALID_AUTHOR_EMAIL',
     COMMIT_FIXUP = 'COMMIT_FIXUP',
+    COMMIT_MERGE = 'COMMIT_MERGE',
     CODE_TYPO = 'CODE_TYPO',
 }
 type Offense =
@@ -146,6 +159,10 @@ type Offense =
       }
     | {
           type: OffenseType.COMMIT_FIXUP;
+          sha: string;
+      }
+    | {
+          type: OffenseType.COMMIT_MERGE;
           sha: string;
       };
 
@@ -250,12 +267,149 @@ const formatMessage = (
                 message: `🚧 Commit ${m.sha} is a fixup, skipping checks.`,
                 severity: 'message',
             };
+        case OffenseType.COMMIT_MERGE:
+            return {
+                message: `🇾 Commit ${m.sha} is a merge, skipping checks. Seeing a merge commit in feature branch in feature branch is unusual and rebase should be preferred for the most cases.`,
+                severity: 'message',
+            };
         default:
             return {
                 message: `MISSING MESSAGE FOR ${JSON.stringify(m)}!`,
                 severity: 'fail',
             };
     }
+};
+
+type Options = {
+    branchTrackerId?: string;
+    gitmojis: Gitmoji[];
+    skipSha?: string[];
+};
+type Checker = (
+    danger: Danger.DangerDSLType,
+    options: Options
+) => Offense[] | Promise<Offense[]>;
+
+const commitReferences: Checker = (danger, options) => {
+    const offenses: Offense[] = [];
+    danger.git.commits
+        .filter(c => !options.skipSha?.includes(c.sha))
+        .forEach(commit => {
+            const commitsReferences = (
+                commit.message.match(/(?:#)[0-9]+/g) ?? []
+            ).map(x => x.substr(1));
+
+            if (commitsReferences.length === 0) {
+                return offenses.push({
+                    type: OffenseType.COMMIT_MISSING_TRACKER_REFERENCE,
+                    sha: commit.sha,
+                });
+            }
+            if (
+                options.branchTrackerId &&
+                !commitsReferences.includes(options.branchTrackerId)
+            ) {
+                offenses.push({
+                    type: OffenseType.COMMIT_BRANCH_TRACKER_REFERENCE_MISMATCH,
+                    sha: commit.sha,
+                    expectedReference: options.branchTrackerId,
+                    found: commitsReferences,
+                });
+            }
+        });
+    return offenses;
+};
+const commitMessageFormat: Checker = async (danger, options) => {
+    const offenses: Offense[] = [];
+    danger.git.commits
+        .filter(c => !options.skipSha?.includes(c.sha))
+        .forEach(commit => {
+            const commitHeader = commit.message.split('\n')[0];
+            const [, symbol, title] =
+                commitHeader.match(/^\s*(\S*)\s*(.*)$/) ?? [];
+            const usedGitmoji = options.gitmojis.find(
+                g => g.code === symbol || g.emoji === symbol
+            );
+            if (commitHeader.length > 50) {
+                offenses.push({
+                    type: OffenseType.COMMIT_MESSAGE_LENGTH,
+                    sha: commit.sha,
+                    length: commitHeader.length,
+                });
+            }
+            if (usedGitmoji) {
+                const expectedMessage = `${usedGitmoji.emoji} ${capitalize(
+                    title
+                )}`;
+                if (expectedMessage !== commitHeader) {
+                    const diff = `
+\`\`\`diff
+- ${commitHeader}
++ ${expectedMessage}${commit.message
+                        .substr(commitHeader.length)
+                        .replace(/\n/g, '\n  ')}
+\`\`\`
+`;
+                    offenses.push({
+                        type: OffenseType.COMMIT_MESSAGE_FORMAT,
+                        sha: commit.sha,
+                        diff,
+                    });
+                }
+            } else {
+                offenses.push({
+                    type: OffenseType.COMMIT_MESSAGE_INVALID_GITMOJI,
+                    sha: commit.sha,
+                    found: symbol,
+                });
+            }
+        });
+    return offenses;
+};
+
+const commitEmail: Checker = (danger, options) => {
+    const offenses: Offense[] = [];
+    danger.git.commits
+        .filter(c => !options.skipSha?.includes(c.sha))
+        .forEach(commit => {
+            if (!commit.author.email.match(EMAIL_REG)) {
+                offenses.push({
+                    type: OffenseType.COMMIT_INVALID_AUTHOR_EMAIL,
+                    sha: commit.sha,
+                    found: commit.author.email,
+                });
+            }
+        });
+    return offenses;
+};
+const commitTypos: Checker = async (danger, options) => {
+    const commitTypos: TextDocumentOffset[] = [];
+    for (const commit of danger.git.commits.filter(
+        c => !options.skipSha?.includes(c.sha)
+    )) {
+        commitTypos.push(
+            ...(await getTyposForText(commit.message, commit.sha))
+        );
+    }
+    return groupTypos(commitTypos).map(
+        typos => ({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos } as const)
+    );
+};
+
+const commitFixupAndMerge: Checker = async (danger, options) => {
+    const offenses: Offense[] = [];
+    options.skipSha = options.skipSha || [];
+    danger.git.commits.forEach(commit => {
+        if (commit.message.startsWith('fixup!')) {
+            offenses.push({ type: OffenseType.COMMIT_FIXUP, sha: commit.sha });
+        } else if ((commit.parents?.length ?? 0) > 1) {
+            offenses.push({ type: OffenseType.COMMIT_MERGE, sha: commit.sha });
+        } else {
+            return;
+        }
+        options.skipSha?.push(commit.sha);
+    });
+    return offenses;
 };
 
 export const rules = async ({
@@ -266,8 +420,7 @@ export const rules = async ({
     message,
 }: typeof Danger) => {
     const messages: Offense[] = [];
-    const commitTypos: Text.TextDocumentOffset[] = [];
-    const codeTypos: Text.TextDocumentOffset[] = [];
+    const codeTypos: TextDocumentOffset[] = [];
     const branchName = danger.gitlab.mr.source_branch;
     const [branchMatched, type, issueNumber, description] =
         branchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
@@ -282,99 +435,20 @@ export const rules = async ({
     }
     markdown(`## 🎫 Redmine ticket\n #${issueNumber}`);
 
-    const gitmojis = await getGitmoji();
-
-    const checkReferences = (commit: Danger.GitCommit) => {
-        const commitsReferences = (
-            commit.message.match(/(?:#)[0-9]+/g) ?? []
-        ).map(x => x.substr(1));
-
-        if (commitsReferences.length === 0) {
-            return messages.push({
-                type: OffenseType.COMMIT_MISSING_TRACKER_REFERENCE,
-                sha: commit.sha,
-            });
-        }
-        if (issueNumber && !commitsReferences.includes(issueNumber)) {
-            messages.push({
-                type: OffenseType.COMMIT_BRANCH_TRACKER_REFERENCE_MISMATCH,
-                sha: commit.sha,
-                expectedReference: issueNumber,
-                found: commitsReferences,
-            });
-        }
+    const options: Options = {
+        gitmojis: await getGitmoji(),
+        branchTrackerId: issueNumber,
     };
-
-    const checkFormat = (commit: Danger.GitCommit) => {
-        const commitHeader = commit.message.split('\n')[0];
-        const [, symbol, title] = commitHeader.match(/^\s*(\S*)\s*(.*)$/) ?? [];
-        const usedGitmoji = gitmojis.find(
-            g => g.code === symbol || g.emoji === symbol
-        );
-        if (commitHeader.length > 50) {
-            messages.push({
-                type: OffenseType.COMMIT_MESSAGE_LENGTH,
-                sha: commit.sha,
-                length: commitHeader.length,
-            });
-        }
-        if (usedGitmoji) {
-            const expectedMessage = `${usedGitmoji.emoji} ${capitalize(title)}`;
-            if (expectedMessage !== commitHeader) {
-                const diff = `
-\`\`\`diff
-- ${commitHeader}
-+ ${expectedMessage}${commit.message
-                    .substr(commitHeader.length)
-                    .replace(/\n/g, '\n  ')}
-\`\`\`
-`;
-                messages.push({
-                    type: OffenseType.COMMIT_MESSAGE_FORMAT,
-                    sha: commit.sha,
-                    diff,
-                });
-            }
-        } else {
-            messages.push({
-                type: OffenseType.COMMIT_MESSAGE_INVALID_GITMOJI,
-                sha: commit.sha,
-                found: symbol,
-            });
-        }
-    };
-    const checkEmail = (commit: Danger.GitCommit) => {
-        if (!commit.author.email.match(EMAIL_REG)) {
-            messages.push({
-                type: OffenseType.COMMIT_INVALID_AUTHOR_EMAIL,
-                sha: commit.sha,
-                found: commit.author.email,
-            });
-        }
-    };
-    const checkMessageTypos = async (commit: Danger.GitCommit) => {
-        commitTypos.push(
-            ...(await getTyposForText(commit.message, commit.sha))
-        );
-    };
-
-    // Check commits
-    for (const commit of danger.git.commits) {
-        if (commit.message.startsWith('fixup!')) {
-            messages.push({ type: OffenseType.COMMIT_FIXUP, sha: commit.sha });
-        }
-        // TODO skip merge commits
-        checkReferences(commit);
-        checkFormat(commit);
-        checkEmail(commit);
-        await checkMessageTypos(commit);
+    for (const rule of [
+        commitFixupAndMerge,
+        commitReferences,
+        commitMessageFormat,
+        commitEmail,
+        commitTypos,
+    ]) {
+        messages.push(...(await rule(danger, options)));
     }
 
-    messages.push(
-        ...groupTypos(commitTypos).map(
-            typos => ({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos } as const)
-        )
-    );
     // Report offenses
     Object.values(OffenseType).map(type => {
         const selected = messages
@@ -412,11 +486,15 @@ export const rules = async ({
         };
         const contents = readFileSync(
             // node_modules / styleguide-backend-config / dist
-            resolve(__dirname, '..', '..', '..', filename),
+            absolutePath(filename),
             'utf8'
         );
         const lines = await getChangedLines(filename);
-        codeTypos.push(...(await getTyposForText(contents, filename)).filter(typo => lines.includes(typo.row)));
+        codeTypos.push(
+            ...(await getTyposForText(contents, filename)).filter(typo =>
+                lines.includes(typo.row)
+            )
+        );
     }
     groupTypos(codeTypos).forEach(typos => {
         const msg = formatMessage({ type: OffenseType.CODE_TYPO, typos });
