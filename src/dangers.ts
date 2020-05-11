@@ -151,7 +151,12 @@ type Offense =
 
 const formatMessage = (
     m: Offense
-): { message: string; severity: 'message' | 'warn' | 'fail', url?: string, ln?: number } => {
+): {
+    message: string;
+    severity: 'message' | 'warn' | 'fail';
+    url?: string;
+    ln?: number;
+} => {
     switch (m.type) {
         case OffenseType.BRANCH_FORMAT:
             return {
@@ -375,9 +380,12 @@ export const rules = async ({
         const selected = messages
             .filter(m => m.type === type)
             .map(formatMessage);
-        if (selected.length === 0) return
-        const msg = [...(selected.length > 1 ? ['']: []),...selected.map(s => s.message)].join('\n - ');
-        ({fail, message, warn})[selected[0].severity](msg)
+        if (selected.length === 0) return;
+        const msg = [
+            ...(selected.length > 1 ? [''] : []),
+            ...selected.map(s => s.message),
+        ].join('\n - ');
+        ({ fail, message, warn }[selected[0].severity](msg));
     });
 
     // Find and report code typos
@@ -388,15 +396,30 @@ export const rules = async ({
         if (filename.match(/package-lock.json/)) {
             continue;
         }
+        const getChangedLines = async (filename: string) => {
+            const structuredDiff = await danger.git.structuredDiffForFile(
+                filename
+            );
+            const lines: number[] = [];
+            structuredDiff?.chunks.forEach(chunk => {
+                lines.push(
+                    ...(chunk.changes as any[])
+                        .filter(change => change.type === 'add')
+                        .map(change => change.ln)
+                );
+            });
+            return lines;
+        };
         const contents = readFileSync(
             // node_modules / styleguide-backend-config / dist
             resolve(__dirname, '..', '..', '..', filename),
             'utf8'
         );
-        codeTypos.push(...(await getTyposForText(contents, filename)));
+        const lines = await getChangedLines(filename);
+        codeTypos.push(...(await getTyposForText(contents, filename)).filter(typo => lines.includes(typo.row)));
     }
     groupTypos(codeTypos).forEach(typos => {
         const msg = formatMessage({ type: OffenseType.CODE_TYPO, typos });
-        ({fail, message, warn})[msg.severity](msg.message, msg.url, msg.ln)
+        ({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
     });
 };
