@@ -10,7 +10,7 @@ import {
     TextDocumentOffset,
 } from 'cspell-lib';
 import { extname, resolve } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 const branchTypes = [
     'fix',
     'feat',
@@ -60,13 +60,11 @@ const getGitmoji = () =>
 const absolutePath = (relPath: string) =>
     resolve(__dirname, '..', '..', '..', relPath); // node_modules / styleguide-backend-config / dist
 
-const ignoreWords =
-    readFileSync(absolutePath('package-lock.json'), 'utf8')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/[\-\_/]/g, ' ')
-        .match(/\w+/g) ?? [];
-
-const getTyposForText = async (text: string, filename: string) => {
+const getTyposForText = async (
+    text: string,
+    filename: string,
+    ignoreWords?: string[]
+) => {
     const config = constructSettingsForText(
         mergeSettings(getDefaultSettings(), {
             ignoreWords,
@@ -146,7 +144,8 @@ type Offense =
       }
     | {
           type: OffenseType.COMMIT_MESSAGE_TYPO;
-          typos: Text.TextDocumentOffset[];
+          sha: string;
+          word: string;
       }
     | {
           type: OffenseType.CODE_TYPO;
@@ -247,13 +246,8 @@ const formatMessage = (
             };
         }
         case OffenseType.COMMIT_MESSAGE_TYPO: {
-            const [first, ...rest] = m.typos;
-            const occurrence = `🔤 \`${first.text}\` in ${first.uri}'s commit message might be a typo.`;
-            const reps = `Same word is repeated ${
-                rest.length
-            } more times in ${rest.map(t => t.uri).join(', ')}`;
             return {
-                message: `${occurrence} ${rest.length > 0 ? reps : ''}`,
+                message: `🔤 \`${m.word}\` in ${m.sha}'s commit message might be a typo.`,
                 severity: 'message',
             };
         }
@@ -282,22 +276,53 @@ const formatMessage = (
 
 type Options = {
     branchTrackerId?: string;
-    gitmojis: Gitmoji[];
+    commitTrackerIds?: string[];
+    gitmojis?: Gitmoji[];
     skipSha?: string[];
+    skipRules?: (keyof typeof rules)[];
+    validSpellingWords?: string[];
 };
 type Checker = (
     danger: Danger.DangerDSLType,
     options: Options
 ) => Offense[] | Promise<Offense[]>;
 
+const branchName: Checker = (danger, options) => {
+    const sourceBranchName = danger.gitlab.mr.source_branch;
+    const [branchMatched, type, issueNumber, description] =
+        sourceBranchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
+    options.branchTrackerId = issueNumber;
+    if (!branchMatched) {
+        return [
+            { branchName: sourceBranchName, type: OffenseType.BRANCH_FORMAT },
+        ];
+    }
+    if (!branchTypes.includes(type)) {
+        return [{ branchType: type, type: OffenseType.BRANCH_TYPE }];
+    }
+    return [];
+};
+
+const branchDeleted: Checker = (danger, options) => {
+    if (danger.gitlab.mr.should_remove_source_branch) {
+        return [{ type: OffenseType.BRANCH_NOT_DELETED }];
+    }
+    return [];
+};
+
 const commitReferences: Checker = (danger, options) => {
     const offenses: Offense[] = [];
+    options.commitTrackerIds = options.commitTrackerIds || [];
     danger.git.commits
         .filter(c => !options.skipSha?.includes(c.sha))
         .forEach(commit => {
             const commitsReferences = (
                 commit.message.match(/(?:#)[0-9]+/g) ?? []
             ).map(x => x.substr(1));
+
+            options.commitTrackerIds?.push(
+                ...commitsReferences.filter(r => r !== options.branchTrackerId)
+            );
 
             if (commitsReferences.length === 0) {
                 return offenses.push({
@@ -317,6 +342,7 @@ const commitReferences: Checker = (danger, options) => {
                 });
             }
         });
+    options.commitTrackerIds = Array.from(new Set(options.commitTrackerIds))
     return offenses;
 };
 const commitMessageFormat: Checker = async (danger, options) => {
@@ -327,7 +353,7 @@ const commitMessageFormat: Checker = async (danger, options) => {
             const commitHeader = commit.message.split('\n')[0];
             const [, symbol, title] =
                 commitHeader.match(/^\s*(\S*)\s*(.*)$/) ?? [];
-            const usedGitmoji = options.gitmojis.find(
+            const usedGitmoji = options.gitmojis?.find(
                 g => g.code === symbol || g.emoji === symbol
             );
             if (commitHeader.length > 50) {
@@ -383,17 +409,28 @@ const commitEmail: Checker = (danger, options) => {
     return offenses;
 };
 const commitTypos: Checker = async (danger, options) => {
-    const commitTypos: TextDocumentOffset[] = [];
+    const offenses: Offense[] = [];
     for (const commit of danger.git.commits.filter(
         c => !options.skipSha?.includes(c.sha)
     )) {
-        commitTypos.push(
-            ...(await getTyposForText(commit.message, commit.sha))
+        offenses.push(
+            ...(
+                await getTyposForText(
+                    commit.message,
+                    commit.sha,
+                    options.validSpellingWords
+                )
+            ).map(
+                typo =>
+                    ({
+                        type: OffenseType.COMMIT_MESSAGE_TYPO,
+                        word: typo.text,
+                        sha: commit.sha,
+                    } as const)
+            )
         );
     }
-    return groupTypos(commitTypos).map(
-        typos => ({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos } as const)
-    );
+    return offenses;
 };
 
 const commitFixupAndMerge: Checker = async (danger, options) => {
@@ -402,7 +439,7 @@ const commitFixupAndMerge: Checker = async (danger, options) => {
     danger.git.commits.forEach(commit => {
         if (commit.message.startsWith('fixup!')) {
             offenses.push({ type: OffenseType.COMMIT_FIXUP, sha: commit.sha });
-        } else if ((commit.parents?.length ?? 0) > 1) {
+        } else if (commit.message.startsWith('Merge')) {
             offenses.push({ type: OffenseType.COMMIT_MERGE, sha: commit.sha });
         } else {
             return;
@@ -412,55 +449,8 @@ const commitFixupAndMerge: Checker = async (danger, options) => {
     return offenses;
 };
 
-export const rules = async ({
-    danger,
-    warn,
-    markdown,
-    schedule,
-    message,
-}: typeof Danger) => {
-    const messages: Offense[] = [];
+const codeTypos: Checker = async (danger, options) => {
     const codeTypos: TextDocumentOffset[] = [];
-    const branchName = danger.gitlab.mr.source_branch;
-    const [branchMatched, type, issueNumber, description] =
-        branchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
-    if (!branchMatched) {
-        messages.push({ branchName, type: OffenseType.BRANCH_FORMAT });
-    } else if (!branchTypes.includes(type)) {
-        messages.push({ branchType: type, type: OffenseType.BRANCH_TYPE });
-    }
-
-    if (danger.gitlab.mr.should_remove_source_branch) {
-        messages.push({ type: OffenseType.BRANCH_NOT_DELETED });
-    }
-    markdown(`## 🎫 Redmine ticket\n #${issueNumber}`);
-
-    const options: Options = {
-        gitmojis: await getGitmoji(),
-        branchTrackerId: issueNumber,
-    };
-    for (const rule of [
-        commitFixupAndMerge,
-        commitReferences,
-        commitMessageFormat,
-        commitEmail,
-        commitTypos,
-    ]) {
-        messages.push(...(await rule(danger, options)));
-    }
-
-    // Report offenses
-    Object.values(OffenseType).map(type => {
-        const selected = messages
-            .filter(m => m.type === type)
-            .map(formatMessage);
-        if (selected.length === 0) return;
-        const msg = [
-            ...(selected.length > 1 ? [''] : []),
-            ...selected.map(s => s.message),
-        ].join('\n - ');
-        ({ fail, message, warn }[selected[0].severity](msg));
-    });
 
     // Find and report code typos
     for (const filename of [
@@ -484,20 +474,115 @@ export const rules = async ({
             });
             return lines;
         };
-        const contents = readFileSync(
-            // node_modules / styleguide-backend-config / dist
-            absolutePath(filename),
-            'utf8'
-        );
+        const contents = readFileSync(absolutePath(filename), 'utf8');
         const lines = await getChangedLines(filename);
         codeTypos.push(
-            ...(await getTyposForText(contents, filename)).filter(typo =>
-                lines.includes(typo.row)
-            )
+            ...(
+                await getTyposForText(
+                    contents,
+                    filename,
+                    options.validSpellingWords
+                )
+            ).filter(typo => lines.includes(typo.row))
         );
     }
-    groupTypos(codeTypos).forEach(typos => {
-        const msg = formatMessage({ type: OffenseType.CODE_TYPO, typos });
-        ({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
+    return groupTypos(codeTypos).map(
+        typos => ({ type: OffenseType.CODE_TYPO, typos } as const)
+    );
+};
+
+const rules = {
+    branchName,
+    branchDeleted,
+    commitFixupAndMerge,
+    commitReferences,
+    commitMessageFormat,
+    commitEmail,
+    commitTypos,
+    codeTypos,
+};
+
+export const runDangerRules = async (
+    { danger, warn, markdown, schedule, message }: typeof Danger,
+    options: Options = {}
+) => {
+    const messages: Offense[] = [];
+
+    // Prepare gitmoji
+    options.gitmojis = await getGitmoji();
+
+    // Prepare spelling
+    const dictionaryFiles = ['package-lock.json'];
+    options.validSpellingWords = options.validSpellingWords || [];
+    for (const file of dictionaryFiles) {
+        if (!existsSync(absolutePath(file))) continue;
+        options.validSpellingWords.push(
+            ...(readFileSync(absolutePath(file), 'utf8')
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/[\-\_/]/g, ' ')
+                .match(/\w+/g) ?? [])
+        );
+    }
+
+    // Run rules
+    for (const [ruleName, rule] of Object.entries(rules)) {
+        if (options.skipRules?.includes(ruleName as any)) continue;
+        messages.push(...(await rule(danger, options)));
+    }
+
+    if (
+        options.branchTrackerId ||
+        (options.commitTrackerIds?.length ?? 0) > 0
+    ) {
+        markdown(
+            [
+                `## 🎫 Redmine ticket`,
+                options?.branchTrackerId
+                    ? `Branch: #${options?.branchTrackerId}`
+                    : '',
+                (options.commitTrackerIds?.length ?? 0) > 0
+                    ? `References from commits: ${options.commitTrackerIds
+                          ?.map(r => `#${r}`)
+                          .join(', ')}`
+                    : '',
+            ].join('\n')
+        );
+    }
+
+    // Report offenses
+    Object.values(OffenseType).map(type => {
+        const currentMessages = messages.filter(m => m.type === type);
+        if (currentMessages.length === 0) return;
+        if (currentMessages.every(m => 'sha' in m)) {
+            const grouped = currentMessages.reduce((acc, val: any) => {
+                const { sha, ...dataWithoutSha } = val;
+                const key = JSON.stringify(dataWithoutSha);
+                (acc[key] = acc[key] || []).push(val);
+                return acc;
+            }, {} as Record<string, Offense[]>);
+            const condensedMsg = Object.values(grouped)
+                .map(msgs => {
+                    const msg = formatMessage(msgs[0]);
+                    if (msgs.length > 1) {
+                        return `${msg.message} Same issue in: ${msgs
+                            .slice(1)
+                            .map((m: any) => m.sha)
+                            .join(', ')}.`;
+                    }
+                    return msg.message;
+                })
+                .join('\n\n');
+            ({ fail, message, warn }[
+                formatMessage(currentMessages[0]).severity
+            ](condensedMsg));
+        } else {
+            currentMessages.map(formatMessage).forEach(msg => {
+                ({ fail, message, warn }[msg.severity](
+                    msg.message,
+                    msg.url,
+                    msg.ln
+                ));
+            });
+        }
     });
 };

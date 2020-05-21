@@ -78,10 +78,22 @@ Copy `.editorconfig` from this project
 ## Danger
 `dangerfile.ts`
 ```typescript
-import { danger, warn, message, fail, markdown, schedule, peril, results } from 'danger';
-import { rules } from 'styleguide-backend-config/dist/dangers';
+import {
+  danger,
+  warn,
+  message,
+  fail,
+  markdown,
+  schedule,
+  peril,
+  results,
+} from 'danger'
+import { runDangerRules } from 'styleguide-backend-config/dist/dangers'
 
-rules({ danger, warn, message, fail, markdown, schedule, peril, results });
+void runDangerRules(
+  { danger, warn, message, fail, markdown, schedule, peril, results },
+  { /* pass options */ }
+)
 ```
 
 ## License
