@@ -402,7 +402,7 @@ const commitFixupAndMerge: Checker = async (danger, options) => {
     danger.git.commits.forEach(commit => {
         if (commit.message.startsWith('fixup!')) {
             offenses.push({ type: OffenseType.COMMIT_FIXUP, sha: commit.sha });
-        } else if ((commit.parents?.length ?? 0) > 1) {
+        } else if (commit.message.startsWith('Merge')) {
             offenses.push({ type: OffenseType.COMMIT_MERGE, sha: commit.sha });
         } else {
             return;
@@ -449,19 +449,6 @@ export const rules = async ({
         messages.push(...(await rule(danger, options)));
     }
 
-    // Report offenses
-    Object.values(OffenseType).map(type => {
-        const selected = messages
-            .filter(m => m.type === type)
-            .map(formatMessage);
-        if (selected.length === 0) return;
-        const msg = [
-            ...(selected.length > 1 ? [''] : []),
-            ...selected.map(s => s.message),
-        ].join('\n - ');
-        ({ fail, message, warn }[selected[0].severity](msg));
-    });
-
     // Find and report code typos
     for (const filename of [
         ...danger.git.created_files,
@@ -497,7 +484,34 @@ export const rules = async ({
         );
     }
     groupTypos(codeTypos).forEach(typos => {
-        const msg = formatMessage({ type: OffenseType.CODE_TYPO, typos });
-        ({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
+        messages.push(({ type: OffenseType.CODE_TYPO, typos }))
+    });
+
+    // Report offenses
+    Object.values(OffenseType).map(type => {
+        const currentMessages = messages.filter(m => m.type === type)
+
+        if (currentMessages.every(m => 'sha' in m)) {
+            const groupped = currentMessages.reduce((acc, val: any) => {
+                const { sha, ...dataWithoutSha } = val
+                const key = JSON.stringify(dataWithoutSha)
+                ;(acc[key] = (acc[key] || [])).push(val)
+                return acc
+            }, {} as Record<string, Offense[]>)
+            Object.values(groupped).forEach((msgs) => {
+                if (msgs.length === 1) {
+                    const msg = formatMessage(msgs[0])
+                    ;({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
+                } else {
+                    const msg = formatMessage(msgs[0])
+                    msg.message = `${msg.message} There is exactly the same issue with the following commits: ${msgs.map((m: any) => m.sha).join(', ')}.`
+                    ;({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
+                }
+            })
+        } else {
+            currentMessages.map(formatMessage).forEach(msg => {
+                ({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
+            })
+        }
     });
 };
