@@ -146,7 +146,8 @@ type Offense =
       }
     | {
           type: OffenseType.COMMIT_MESSAGE_TYPO;
-          typos: Text.TextDocumentOffset[];
+          sha: string;
+          word: string;
       }
     | {
           type: OffenseType.CODE_TYPO;
@@ -247,13 +248,8 @@ const formatMessage = (
             };
         }
         case OffenseType.COMMIT_MESSAGE_TYPO: {
-            const [first, ...rest] = m.typos;
-            const occurrence = `🔤 \`${first.text}\` in ${first.uri}'s commit message might be a typo.`;
-            const reps = `Same word is repeated ${
-                rest.length
-            } more times in ${rest.map(t => t.uri).join(', ')}`;
             return {
-                message: `${occurrence} ${rest.length > 0 ? reps : ''}`,
+                message: `🔤 \`${m.word}\` in ${m.sha}'s commit message might be a typo.`,
                 severity: 'message',
             };
         }
@@ -383,17 +379,15 @@ const commitEmail: Checker = (danger, options) => {
     return offenses;
 };
 const commitTypos: Checker = async (danger, options) => {
-    const commitTypos: TextDocumentOffset[] = [];
+    const offenses: Offense[] = [];
     for (const commit of danger.git.commits.filter(
         c => !options.skipSha?.includes(c.sha)
     )) {
-        commitTypos.push(
-            ...(await getTyposForText(commit.message, commit.sha))
-        );
+        offenses.push(...(await getTyposForText(commit.message, commit.sha)).map(typo => ({
+            type: OffenseType.COMMIT_MESSAGE_TYPO, word: typo.text, sha: commit.sha
+        } as const)))
     }
-    return groupTypos(commitTypos).map(
-        typos => ({ type: OffenseType.COMMIT_MESSAGE_TYPO, typos } as const)
-    );
+    return offenses;
 };
 
 const commitFixupAndMerge: Checker = async (danger, options) => {
@@ -490,7 +484,7 @@ export const rules = async ({
     // Report offenses
     Object.values(OffenseType).map(type => {
         const currentMessages = messages.filter(m => m.type === type)
-
+        if (currentMessages.length === 0) return
         if (currentMessages.every(m => 'sha' in m)) {
             const groupped = currentMessages.reduce((acc, val: any) => {
                 const { sha, ...dataWithoutSha } = val
@@ -498,16 +492,14 @@ export const rules = async ({
                 ;(acc[key] = (acc[key] || [])).push(val)
                 return acc
             }, {} as Record<string, Offense[]>)
-            Object.values(groupped).forEach((msgs) => {
-                if (msgs.length === 1) {
-                    const msg = formatMessage(msgs[0])
-                    ;({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
-                } else {
-                    const msg = formatMessage(msgs[0])
-                    msg.message = `${msg.message} There is exactly the same issue with the following commits: ${msgs.map((m: any) => m.sha).join(', ')}.`
-                    ;({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
+            const condensedMsg = Object.values(groupped).map((msgs) => {
+                const msg = formatMessage(msgs[0])
+                if (msgs.length > 1) {
+                    return `${msg.message} Same issue in the following commits: ${msgs.slice(1).map((m: any) => m.sha).join(', ')}.`
                 }
-            })
+                return msg.message
+            }).join('\n\n')
+            ;({ fail, message, warn }[formatMessage(currentMessages[0]).severity](condensedMsg));
         } else {
             currentMessages.map(formatMessage).forEach(msg => {
                 ({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
