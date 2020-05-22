@@ -278,13 +278,37 @@ const formatMessage = (
 
 type Options = {
     branchTrackerId?: string;
-    gitmojis: Gitmoji[];
+    gitmojis?: Gitmoji[];
     skipSha?: string[];
+    skip?: (keyof typeof rules)[]
 };
 type Checker = (
     danger: Danger.DangerDSLType,
     options: Options
 ) => Offense[] | Promise<Offense[]>;
+
+const branchName: Checker = (danger, options) => {
+    const sourceBranchName = danger.gitlab.mr.source_branch;
+    const [branchMatched, type, issueNumber, description] =
+        sourceBranchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
+    options.branchTrackerId = issueNumber;
+    if (!branchMatched) {
+        return [
+            { branchName: sourceBranchName, type: OffenseType.BRANCH_FORMAT },
+        ];
+    }
+    if (!branchTypes.includes(type)) {
+        return [{ branchType: type, type: OffenseType.BRANCH_TYPE }];
+    }
+    return [];
+};
+
+const branchDeleted: Checker = (danger, options) => {
+    if (danger.gitlab.mr.should_remove_source_branch) {
+        return [{ type: OffenseType.BRANCH_NOT_DELETED }];
+    }
+    return [];
+};
 
 const commitReferences: Checker = (danger, options) => {
     const offenses: Offense[] = [];
@@ -323,7 +347,7 @@ const commitMessageFormat: Checker = async (danger, options) => {
             const commitHeader = commit.message.split('\n')[0];
             const [, symbol, title] =
                 commitHeader.match(/^\s*(\S*)\s*(.*)$/) ?? [];
-            const usedGitmoji = options.gitmojis.find(
+            const usedGitmoji = options.gitmojis?.find(
                 g => g.code === symbol || g.emoji === symbol
             );
             if (commitHeader.length > 50) {
@@ -383,9 +407,16 @@ const commitTypos: Checker = async (danger, options) => {
     for (const commit of danger.git.commits.filter(
         c => !options.skipSha?.includes(c.sha)
     )) {
-        offenses.push(...(await getTyposForText(commit.message, commit.sha)).map(typo => ({
-            type: OffenseType.COMMIT_MESSAGE_TYPO, word: typo.text, sha: commit.sha
-        } as const)))
+        offenses.push(
+            ...(await getTyposForText(commit.message, commit.sha)).map(
+                typo =>
+                    ({
+                        type: OffenseType.COMMIT_MESSAGE_TYPO,
+                        word: typo.text,
+                        sha: commit.sha,
+                    } as const)
+            )
+        );
     }
     return offenses;
 };
@@ -406,42 +437,8 @@ const commitFixupAndMerge: Checker = async (danger, options) => {
     return offenses;
 };
 
-export const rules = async ({
-    danger,
-    warn,
-    markdown,
-    schedule,
-    message,
-}: typeof Danger) => {
-    const messages: Offense[] = [];
+const codeTypos: Checker = async (danger, options) => {
     const codeTypos: TextDocumentOffset[] = [];
-    const branchName = danger.gitlab.mr.source_branch;
-    const [branchMatched, type, issueNumber, description] =
-        branchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? [];
-    if (!branchMatched) {
-        messages.push({ branchName, type: OffenseType.BRANCH_FORMAT });
-    } else if (!branchTypes.includes(type)) {
-        messages.push({ branchType: type, type: OffenseType.BRANCH_TYPE });
-    }
-
-    if (danger.gitlab.mr.should_remove_source_branch) {
-        messages.push({ type: OffenseType.BRANCH_NOT_DELETED });
-    }
-    markdown(`## 🎫 Redmine ticket\n #${issueNumber}`);
-
-    const options: Options = {
-        gitmojis: await getGitmoji(),
-        branchTrackerId: issueNumber,
-    };
-    for (const rule of [
-        commitFixupAndMerge,
-        commitReferences,
-        commitMessageFormat,
-        commitEmail,
-        commitTypos,
-    ]) {
-        messages.push(...(await rule(danger, options)));
-    }
 
     // Find and report code typos
     for (const filename of [
@@ -477,33 +474,76 @@ export const rules = async ({
             )
         );
     }
-    groupTypos(codeTypos).forEach(typos => {
-        messages.push(({ type: OffenseType.CODE_TYPO, typos }))
-    });
+    return groupTypos(codeTypos).map(
+        typos => ({ type: OffenseType.CODE_TYPO, typos } as const)
+    );
+};
+
+const rules = {
+    branchName,
+    branchDeleted,
+    commitFixupAndMerge,
+    commitReferences,
+    commitMessageFormat,
+    commitEmail,
+    commitTypos,
+    codeTypos,
+}
+
+export const runDangerRules = async ({
+    danger,
+    warn,
+    markdown,
+    schedule,
+    message,
+}: typeof Danger, options: Options = {}) => {
+    const messages: Offense[] = [];
+    options.gitmojis = await getGitmoji();
+    for (const [ruleName, rule] of Object.entries(rules)) {
+        if (options.skip?.includes(ruleName as any)) continue;
+        messages.push(...(await rule(danger, options)));
+    }
+
+    if (options.branchTrackerId) {
+        markdown(`## 🎫 Redmine ticket\n #${options.branchTrackerId}`);
+    }
 
     // Report offenses
     Object.values(OffenseType).map(type => {
-        const currentMessages = messages.filter(m => m.type === type)
-        if (currentMessages.length === 0) return
+        const currentMessages = messages.filter(m => m.type === type);
+        if (currentMessages.length === 0) return;
         if (currentMessages.every(m => 'sha' in m)) {
-            const groupped = currentMessages.reduce((acc, val: any) => {
-                const { sha, ...dataWithoutSha } = val
-                const key = JSON.stringify(dataWithoutSha)
-                ;(acc[key] = (acc[key] || [])).push(val)
-                return acc
-            }, {} as Record<string, Offense[]>)
-            const condensedMsg = Object.values(groupped).map((msgs) => {
-                const msg = formatMessage(msgs[0])
-                if (msgs.length > 1) {
-                    return `${msg.message} Same issue in the following commits: ${msgs.slice(1).map((m: any) => m.sha).join(', ')}.`
-                }
-                return msg.message
-            }).join('\n\n')
-            ;({ fail, message, warn }[formatMessage(currentMessages[0]).severity](condensedMsg));
+            const grouped = currentMessages.reduce((acc, val: any) => {
+                const { sha, ...dataWithoutSha } = val;
+                const key = JSON.stringify(dataWithoutSha);
+                (acc[key] = acc[key] || []).push(val);
+                return acc;
+            }, {} as Record<string, Offense[]>);
+            const condensedMsg = Object.values(grouped)
+                .map(msgs => {
+                    const msg = formatMessage(msgs[0]);
+                    if (msgs.length > 1) {
+                        return `${
+                            msg.message
+                        } Same issue in the following commits: ${msgs
+                            .slice(1)
+                            .map((m: any) => m.sha)
+                            .join(', ')}.`;
+                    }
+                    return msg.message;
+                })
+                .join('\n\n');
+            ({ fail, message, warn }[
+                formatMessage(currentMessages[0]).severity
+            ](condensedMsg));
         } else {
             currentMessages.map(formatMessage).forEach(msg => {
-                ({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln));
-            })
+                ({ fail, message, warn }[msg.severity](
+                    msg.message,
+                    msg.url,
+                    msg.ln
+                ));
+            });
         }
     });
 };
