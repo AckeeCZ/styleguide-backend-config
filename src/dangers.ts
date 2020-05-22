@@ -10,7 +10,7 @@ import {
     TextDocumentOffset,
 } from 'cspell-lib';
 import { extname, resolve } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 const branchTypes = [
     'fix',
     'feat',
@@ -60,13 +60,11 @@ const getGitmoji = () =>
 const absolutePath = (relPath: string) =>
     resolve(__dirname, '..', '..', '..', relPath); // node_modules / styleguide-backend-config / dist
 
-const ignoreWords =
-    readFileSync(absolutePath('package-lock.json'), 'utf8')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/[\-\_/]/g, ' ')
-        .match(/\w+/g) ?? [];
-
-const getTyposForText = async (text: string, filename: string) => {
+const getTyposForText = async (
+    text: string,
+    filename: string,
+    ignoreWords?: string[]
+) => {
     const config = constructSettingsForText(
         mergeSettings(getDefaultSettings(), {
             ignoreWords,
@@ -278,9 +276,11 @@ const formatMessage = (
 
 type Options = {
     branchTrackerId?: string;
+    commitTrackerIds?: string[];
     gitmojis?: Gitmoji[];
     skipSha?: string[];
-    skip?: (keyof typeof rules)[]
+    skipRules?: (keyof typeof rules)[];
+    validSpellingWords?: string[];
 };
 type Checker = (
     danger: Danger.DangerDSLType,
@@ -312,12 +312,17 @@ const branchDeleted: Checker = (danger, options) => {
 
 const commitReferences: Checker = (danger, options) => {
     const offenses: Offense[] = [];
+    options.commitTrackerIds = options.commitTrackerIds || [];
     danger.git.commits
         .filter(c => !options.skipSha?.includes(c.sha))
         .forEach(commit => {
             const commitsReferences = (
                 commit.message.match(/(?:#)[0-9]+/g) ?? []
             ).map(x => x.substr(1));
+
+            options.commitTrackerIds?.push(
+                ...commitsReferences.filter(r => r !== options.branchTrackerId)
+            );
 
             if (commitsReferences.length === 0) {
                 return offenses.push({
@@ -337,6 +342,7 @@ const commitReferences: Checker = (danger, options) => {
                 });
             }
         });
+    options.commitTrackerIds = Array.from(new Set(options.commitTrackerIds))
     return offenses;
 };
 const commitMessageFormat: Checker = async (danger, options) => {
@@ -408,7 +414,13 @@ const commitTypos: Checker = async (danger, options) => {
         c => !options.skipSha?.includes(c.sha)
     )) {
         offenses.push(
-            ...(await getTyposForText(commit.message, commit.sha)).map(
+            ...(
+                await getTyposForText(
+                    commit.message,
+                    commit.sha,
+                    options.validSpellingWords
+                )
+            ).map(
                 typo =>
                     ({
                         type: OffenseType.COMMIT_MESSAGE_TYPO,
@@ -462,16 +474,16 @@ const codeTypos: Checker = async (danger, options) => {
             });
             return lines;
         };
-        const contents = readFileSync(
-            // node_modules / styleguide-backend-config / dist
-            absolutePath(filename),
-            'utf8'
-        );
+        const contents = readFileSync(absolutePath(filename), 'utf8');
         const lines = await getChangedLines(filename);
         codeTypos.push(
-            ...(await getTyposForText(contents, filename)).filter(typo =>
-                lines.includes(typo.row)
-            )
+            ...(
+                await getTyposForText(
+                    contents,
+                    filename,
+                    options.validSpellingWords
+                )
+            ).filter(typo => lines.includes(typo.row))
         );
     }
     return groupTypos(codeTypos).map(
@@ -488,24 +500,53 @@ const rules = {
     commitEmail,
     commitTypos,
     codeTypos,
-}
+};
 
-export const runDangerRules = async ({
-    danger,
-    warn,
-    markdown,
-    schedule,
-    message,
-}: typeof Danger, options: Options = {}) => {
+export const runDangerRules = async (
+    { danger, warn, markdown, schedule, message }: typeof Danger,
+    options: Options = {}
+) => {
     const messages: Offense[] = [];
+
+    // Prepare gitmoji
     options.gitmojis = await getGitmoji();
+
+    // Prepare spelling
+    const dictionaryFiles = ['package-lock.json'];
+    options.validSpellingWords = options.validSpellingWords || [];
+    for (const file of dictionaryFiles) {
+        if (!existsSync(absolutePath(file))) continue;
+        options.validSpellingWords.push(
+            ...(readFileSync(absolutePath(file), 'utf8')
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/[\-\_/]/g, ' ')
+                .match(/\w+/g) ?? [])
+        );
+    }
+
+    // Run rules
     for (const [ruleName, rule] of Object.entries(rules)) {
-        if (options.skip?.includes(ruleName as any)) continue;
+        if (options.skipRules?.includes(ruleName as any)) continue;
         messages.push(...(await rule(danger, options)));
     }
 
-    if (options.branchTrackerId) {
-        markdown(`## 🎫 Redmine ticket\n #${options.branchTrackerId}`);
+    if (
+        options.branchTrackerId ||
+        (options.commitTrackerIds?.length ?? 0) > 0
+    ) {
+        markdown(
+            [
+                `## 🎫 Redmine ticket`,
+                options?.branchTrackerId
+                    ? `Branch: #${options?.branchTrackerId}`
+                    : '',
+                (options.commitTrackerIds?.length ?? 0) > 0
+                    ? `References from commits: ${options.commitTrackerIds
+                          ?.map(r => `#${r}`)
+                          .join(', ')}`
+                    : '',
+            ].join('\n')
+        );
     }
 
     // Report offenses
@@ -523,9 +564,7 @@ export const runDangerRules = async ({
                 .map(msgs => {
                     const msg = formatMessage(msgs[0]);
                     if (msgs.length > 1) {
-                        return `${
-                            msg.message
-                        } Same issue in the following commits: ${msgs
+                        return `${msg.message} Same issue in: ${msgs
                             .slice(1)
                             .map((m: any) => m.sha)
                             .join(', ')}.`;
