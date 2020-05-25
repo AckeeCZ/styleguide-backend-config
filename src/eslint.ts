@@ -33,6 +33,8 @@ export = {
                 asyncArrow: 'always',
             },
         ],
+        "no-extra-semi": 0,
+        "@typescript-eslint/member-delimiter-style": 0,
 
         // error prevention
         '@typescript-eslint/strict-boolean-expressions': 0,

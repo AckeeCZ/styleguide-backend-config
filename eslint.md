@@ -15,6 +15,15 @@ We enforce dangling commas for cleaner diffs, following the Airbnb standard.
 #### Modified `@typescript-eslint/space-before-function-paren`
 There is never a space seperating function name from the opening bracket and also no space after `function` keyword which stands as the function name. There is a space before `async`, since it is not a name but "modifier".
 
+#### Disabled `no-extra-semi`
+We leave that settings on prettier. Basically we want to achieve [`semi: "never", { "beforeStatementContinuationChars": "always" }`](https://eslint.org/docs/rules/semi#beforestatementcontinuationchars), but that does not seem to work with TS.
+
+1. Inconsistent with prettier and not configurable on prettier side.
+2. Prevents funny diffs as explained [here](https://github.com/prettier/prettier/issues/736#issuecomment-291934981)
+
+#### Disabled `@typescript-eslint/member-delimiter-style`
+Prettier config changed via `semi` and member delimiter [is not](https://github.com/prettier/prettier/issues/1944#issuecomment-334112532) further configurable. Configuration is not trivial (single/multi line, type/interface, last line handling). For simplicity we leave that to prettier all together.
+
 ### Error prevention
 
 #### Disabled `@typescript-eslint/strict-boolean-expressions`
