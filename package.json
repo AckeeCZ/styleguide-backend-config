@@ -1,5 +1,5 @@
 {
-  "name": "styleguide-backend-config",
+  "name": "@ackee/styleguide-backend-config",
   "description": "styleguide-backend-config",
   "version": "0.1.0",
   "author": "Jaroslav Šmolík <grissius@gmail.com>",
