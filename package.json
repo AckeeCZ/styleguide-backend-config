@@ -46,7 +46,6 @@
     "lint-staged": "^10.0.8",
     "npm-check": "^5.8.0",
     "ts-jest": "^25.2.1",
-    "tslint-config-ackee": "^0.3.0",
     "typescript": "^3.3.3333"
   }
 }
