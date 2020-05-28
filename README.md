@@ -17,7 +17,7 @@ npm i -D git+ssh://git@github.com:AckeeCZ/styleguide-backend-config.git
 `.eslintrc.js`
 
 ```js
-module.exports = require('styleguide-backend-config/dist/eslint')
+module.exports = require('styleguide-backend-config/eslint')
 ```
 
 ```jsonc
@@ -37,7 +37,7 @@ For detailed rules description, see [eslint](./eslint.md)
 `prettier.config.js`
 
 ```js
-module.exports = require('styleguide-backend-config/dist/prettier')
+module.exports = require('styleguide-backend-config/prettier')
 ```
 
 ```jsonc
@@ -100,7 +100,7 @@ import {
   peril,
   results,
 } from 'danger'
-import { runDangerRules } from 'styleguide-backend-config/dist/dangers'
+import { runDangerRules } from 'styleguide-backend-config/danger'
 
 void runDangerRules(
   { danger, warn, message, fail, markdown, schedule, peril, results },

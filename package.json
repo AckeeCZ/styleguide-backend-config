@@ -4,9 +4,11 @@
   "version": "0.1.0",
   "author": "Jaroslav Šmolík <grissius@gmail.com>",
   "contributors": [],
-  "main": "./dist/eslint.js",
   "files": [
-    "dist/*"
+    "dist/*",
+    "danger.js",
+    "eslint.js",
+    "prettier.js"
   ],
   "engines": {
     "node": "^10.14.0"
