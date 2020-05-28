@@ -47,7 +47,7 @@ const getGitmoji = () =>
         res.setEncoding('utf8')
         let body = ''
         res.on('data', (data: string) => {
-          body = data
+          body += data
         })
         res.on('error', reject)
         res.on('end', () => {
