@@ -17,13 +17,16 @@
     "type": "git",
     "url": "https://github.com/AckeeCZ/styleguide-backend-config"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
   "keywords": [],
   "scripts": {
     "build": "tsc",
     "test": "jest",
     "test:coverage": "npm run test -- --collectCoverage",
-    "lint": "tslint -t codeFrame -p .",
+    "lint": "eslint --ignore-path .gitignore '**/*.ts' -f codeframe",
     "prepare": "npm run build",
     "check": "npm-check -i app -i errors -i config -i index & exit 0"
   },
