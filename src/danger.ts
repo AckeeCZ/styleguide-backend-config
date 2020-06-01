@@ -284,7 +284,8 @@ type Checker = (
 ) => Offense[] | Promise<Offense[]>
 
 const branchName: Checker = (danger, options) => {
-  const sourceBranchName = danger.gitlab.mr.source_branch
+  const sourceBranchName =
+    danger.gitlab?.mr?.source_branch ?? danger.github?.pr?.head?.ref
   const [branchMatched, type, issueNumber] =
     sourceBranchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? []
   options.branchTrackerId = issueNumber
@@ -298,7 +299,7 @@ const branchName: Checker = (danger, options) => {
 }
 
 const branchDeleted: Checker = (danger, options) => {
-  if (danger.gitlab.mr.should_remove_source_branch) {
+  if (danger.gitlab?.mr?.should_remove_source_branch) {
     return [{ type: OffenseType.BRANCH_NOT_DELETED }]
   }
   return []
