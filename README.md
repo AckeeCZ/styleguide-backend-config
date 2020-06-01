@@ -4,12 +4,15 @@
 
 Configuration files for [styleguide](https://github.com/AckeeCZ/styleguide) enforcement tools
 
+[![](https://img.shields.io/travis/com/AckeeCZ/styleguide-backend-config?style=flat-square)](https://github.com/AckeeCZ/styleguide-backend-config)
+[![](https://img.shields.io/npm/v/@ackee/styleguide-backend-config?style=flat-square)](https://www.npmjs.com/package/@ackee/styleguide-backend-config)
+
 </div>
 
 ## Setup
 
 ```
-npm i -D git+ssh://git@github.com:AckeeCZ/styleguide-backend-config.git
+npm i -D @ackee/styleguide-backend-config
 ```
 
 ## ESLint
