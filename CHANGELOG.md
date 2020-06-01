@@ -1,5 +1,17 @@
 # Changelog
 
+<a name="0.1.2"></a>
+## 0.1.2 (2020-06-01)
+
+### Fixed
+
+- 🐛 Fix path resolving with scoped package [[699c2c8](https://github.com/AckeeCZ/styleguide-backend-config/commit/699c2c8c4670966b743dfe4c7768ef54db4a7c4a)]
+
+### Miscellaneous
+
+- 📝 Fix travis link [[2f75750](https://github.com/AckeeCZ/styleguide-backend-config/commit/2f75750586a069a2aab2bc920d47ad8ea288d5e1)]
+
+
 <a name="0.1.1"></a>
 ## 0.1.1 (2020-06-01)
 
