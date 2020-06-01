@@ -79,13 +79,10 @@ const getTyposForText = async (
 
 const groupTypos = (typos: Text.TextDocumentOffset[]) =>
   Object.values(
-    typos.reduce(
-      (r: Record<string, Text.TextDocumentOffset[]>, v) => {
-        (r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
-        return r
-      },
-      {}
-    )
+    typos.reduce((r: Record<string, Text.TextDocumentOffset[]>, v) => {
+      ;(r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
+      return r
+    }, {})
   )
 
 enum OffenseType {
@@ -233,7 +230,9 @@ const formatMessage = (
       const occurrence = `🔤 \`${first.text}\` might be a typo.`
       const reps = `Same word is repeated ${
         rest.length
-      } more times in ${rest.map(t => `\`${t.uri ?? ''}:${t.row}\``).join(', ')}`
+      } more times in ${rest
+        .map(t => `\`${t.uri ?? ''}:${t.row}\``)
+        .join(', ')}`
       return {
         message: `${occurrence} ${rest.length > 0 ? reps : ''}`,
         severity: 'message',
@@ -249,7 +248,11 @@ const formatMessage = (
     }
     case OffenseType.COMMIT_INVALID_AUTHOR_EMAIL:
       return {
-        message: `✉️ Commit ${m.sha} has a fishy email \`${m.found}\`. Does not [match](${COMMIT_GUIDE}) \`${EMAIL_REG as unknown as string}\`.`,
+        message: `✉️ Commit ${m.sha} has a fishy email \`${
+          m.found
+        }\`. Does not [match](${COMMIT_GUIDE}) \`${
+          (EMAIL_REG as unknown) as string
+        }\`.`,
         severity: 'warn',
       }
     case OffenseType.COMMIT_FIXUP:
@@ -522,9 +525,9 @@ export const runDangerRules = async (
         '## 🎫 Redmine ticket',
         options?.branchTrackerId ? `Branch: #${options?.branchTrackerId}` : '',
         (options.commitTrackerIds?.length ?? 0) > 0
-          ? `References from commits: ${options.commitTrackerIds
-              ?.map(r => `#${r}`)
-              .join(', ') ?? ''}`
+          ? `References from commits: ${
+              options.commitTrackerIds?.map(r => `#${r}`).join(', ') ?? ''
+            }`
           : '',
       ].join('\n')
     )
@@ -535,12 +538,15 @@ export const runDangerRules = async (
     const currentMessages = messages.filter(m => m.type === type)
     if (currentMessages.length === 0) return
     if (currentMessages.every(m => 'sha' in m)) {
-      const grouped = currentMessages.reduce((acc: Record<string, Offense[]>, val: any) => {
-        const { sha, ...dataWithoutSha } = val
-        const key = JSON.stringify(dataWithoutSha)
-        ;(acc[key] = acc[key] || []).push(val)
-        return acc
-      }, {})
+      const grouped = currentMessages.reduce(
+        (acc: Record<string, Offense[]>, val: any) => {
+          const { sha, ...dataWithoutSha } = val
+          const key = JSON.stringify(dataWithoutSha)
+          ;(acc[key] = acc[key] || []).push(val)
+          return acc
+        },
+        {}
+      )
       const condensedMsg = Object.values(grouped)
         .map(msgs => {
           const msg = formatMessage(msgs[0])
