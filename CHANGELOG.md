@@ -1,5 +1,21 @@
 # Changelog
 
+<a name="0.1.1"></a>
+## 0.1.1 (2020-06-01)
+
+### Changed
+
+- 🚨 Fix prettier formatting [[7f2ae37](https://github.com/AckeeCZ/styleguide-backend-config/commit/7f2ae3748877f2c4f6ca98a5298b4fe1eeca43b1)]
+
+### Fixed
+
+- 🐛 Fix danger github interoperability [[e8a3756](https://github.com/AckeeCZ/styleguide-backend-config/commit/e8a3756971c0a3de4e8e10f4f083a56bc92dec60)]
+
+### Miscellaneous
+
+- 📝 Update install instructions [[906708e](https://github.com/AckeeCZ/styleguide-backend-config/commit/906708edc1057a843d2bb72aa9344ee1c7a5c9ff)]
+
+
 <a name="0.1.0"></a>
 ## 0.1.0 (2020-05-28)
 
