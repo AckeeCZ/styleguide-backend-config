@@ -58,7 +58,7 @@ const getGitmoji = () =>
   })
 
 const absolutePath = (relPath: string) =>
-  resolve(__dirname, '..', '..', '..', relPath) // node_modules / styleguide-backend-config / dist
+  resolve(__dirname, '..', '..', '..', '..', relPath) // node_modules / @ackee / styleguide-backend-config / dist
 
 const getTyposForText = async (
   text: string,
