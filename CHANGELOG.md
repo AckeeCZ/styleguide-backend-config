@@ -1,5 +1,21 @@
 # Changelog
 
+<a name="0.1.3"></a>
+## 0.1.3 (2020-06-02)
+
+### Added
+
+- ✨ Add yarn lock as dictionary [[7092e14](https://github.com/AckeeCZ/styleguide-backend-config/commit/7092e14dbd9922b6ebeb70e77787099870f700b2)]
+
+### Changed
+
+- ⬆️ Support newer versions of node [[137ad7a](https://github.com/AckeeCZ/styleguide-backend-config/commit/137ad7ab00fafe35ef72f5a26b9cc2fad4de65b3)]
+
+### Miscellaneous
+
+-  Merge pull request [#1](https://github.com/AckeeCZ/styleguide-backend-config/issues/1) from AckeeCZ/feat/yarn-support [[cdfffb8](https://github.com/AckeeCZ/styleguide-backend-config/commit/cdfffb8eb4be8db7a7224ac2d10745c5e66c9a91)]
+
+
 <a name="0.1.2"></a>
 ## 0.1.2 (2020-06-01)
 
