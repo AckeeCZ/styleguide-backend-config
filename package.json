@@ -11,7 +11,7 @@
     "prettier.js"
   ],
   "engines": {
-    "node": "^10.14.0"
+    "node": ">=10.14.0"
   },
   "repository": {
     "type": "git",
