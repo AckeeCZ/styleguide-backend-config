@@ -452,6 +452,7 @@ const codeTypos: Checker = async (danger, options) => {
     ...danger.git.created_files,
     ...danger.git.modified_files,
   ]) {
+    // TODO: skip if too large generally
     if (filename.match(/package-lock.json/)) {
       continue
     }
@@ -501,7 +502,7 @@ export const runDangerRules = async (
   options.gitmojis = await getGitmoji()
 
   // Prepare spelling
-  const dictionaryFiles = ['package-lock.json']
+  const dictionaryFiles = ['package-lock.json', 'yarn.lock']
   options.validSpellingWords = options.validSpellingWords ?? []
   for (const file of dictionaryFiles) {
     if (!existsSync(absolutePath(file))) continue
