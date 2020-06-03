@@ -1,5 +1,18 @@
 # Changelog
 
+<a name="0.1.4"></a>
+## 0.1.4 (2020-06-03)
+
+### Changed
+
+- ⚡ Optimize token loading for large files [[6675e3b](https://github.com/AckeeCZ/styleguide-backend-config/commit/6675e3be7078fc351a04fc8bb2c9f6306faeea74)]
+- ⚡ Skip spellcheck for large files [[5f828d5](https://github.com/AckeeCZ/styleguide-backend-config/commit/5f828d551410dbde9a887e8a88c906247cd304d9)]
+
+### Miscellaneous
+
+-  Merge pull request [#2](https://github.com/AckeeCZ/styleguide-backend-config/issues/2) from AckeeCZ/perf/large-files [[e69c7da](https://github.com/AckeeCZ/styleguide-backend-config/commit/e69c7da3b6e9b52572a957a54d27b43d6920c00e)]
+
+
 <a name="0.1.3"></a>
 ## 0.1.3 (2020-06-02)
 
