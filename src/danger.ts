@@ -10,7 +10,8 @@ import {
   TextDocumentOffset,
 } from 'cspell-lib'
 import { extname, resolve } from 'path'
-import { readFileSync, existsSync, statSync } from 'fs'
+import { createInterface } from 'readline'
+import { readFileSync, existsSync, statSync, createReadStream } from 'fs'
 const branchTypes = [
   'fix',
   'feat',
@@ -505,14 +506,24 @@ export const runDangerRules = async (
   // Prepare spelling
   const dictionaryFiles = ['package-lock.json', 'yarn.lock']
   options.validSpellingWords = options.validSpellingWords ?? []
+  const dictMap = new Map()
   for (const file of dictionaryFiles) {
-    if (!existsSync(absolutePath(file))) continue
-    options.validSpellingWords.push(
-      ...(readFileSync(absolutePath(file), 'utf8')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/[-_/]/g, ' ')
-        .match(/\w+/g) ?? [])
-    )
+    const filePath = absolutePath(file)
+    if (!existsSync(filePath)) continue
+    const reader = createInterface({
+      input: createReadStream(filePath, 'utf8'),
+    })
+    reader.on('line', line => {
+      ;(
+        line
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/[-_/]/g, ' ')
+          .match(/\w+/g) ?? []
+      ).forEach(token => {
+        dictMap.set(token, true)
+      })
+    })
+    options.validSpellingWords.push(...Array.from(dictMap.keys()))
   }
 
   // Run rules
