@@ -10,7 +10,7 @@ import {
   TextDocumentOffset,
 } from 'cspell-lib'
 import { extname, resolve } from 'path'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, statSync } from 'fs'
 const branchTypes = [
   'fix',
   'feat',
@@ -452,8 +452,9 @@ const codeTypos: Checker = async (danger, options) => {
     ...danger.git.created_files,
     ...danger.git.modified_files,
   ]) {
-    // TODO: skip if too large generally
-    if (filename.match(/package-lock.json/)) {
+    const filePath = absolutePath(filename)
+    if (statSync(filePath).size / 1e3 > 500) {
+      // skip larger than 500Kb
       continue
     }
     const getChangedLines = async (filename: string) => {
@@ -468,7 +469,7 @@ const codeTypos: Checker = async (danger, options) => {
       })
       return lines
     }
-    const contents = readFileSync(absolutePath(filename), 'utf8')
+    const contents = readFileSync(filePath, 'utf8')
     const lines = await getChangedLines(filename)
     codeTypos.push(
       ...(
