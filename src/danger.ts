@@ -10,7 +10,8 @@ import {
   TextDocumentOffset,
 } from 'cspell-lib'
 import { extname, resolve } from 'path'
-import { readFileSync, existsSync } from 'fs'
+import { createInterface } from 'readline'
+import { readFileSync, existsSync, statSync, createReadStream } from 'fs'
 const branchTypes = [
   'fix',
   'feat',
@@ -452,8 +453,9 @@ const codeTypos: Checker = async (danger, options) => {
     ...danger.git.created_files,
     ...danger.git.modified_files,
   ]) {
-    // TODO: skip if too large generally
-    if (filename.match(/package-lock.json/)) {
+    const filePath = absolutePath(filename)
+    if (statSync(filePath).size / 1e3 > 500) {
+      // skip larger than 500Kb
       continue
     }
     const getChangedLines = async (filename: string) => {
@@ -468,7 +470,7 @@ const codeTypos: Checker = async (danger, options) => {
       })
       return lines
     }
-    const contents = readFileSync(absolutePath(filename), 'utf8')
+    const contents = readFileSync(filePath, 'utf8')
     const lines = await getChangedLines(filename)
     codeTypos.push(
       ...(
@@ -504,14 +506,24 @@ export const runDangerRules = async (
   // Prepare spelling
   const dictionaryFiles = ['package-lock.json', 'yarn.lock']
   options.validSpellingWords = options.validSpellingWords ?? []
+  const dictMap = new Map()
   for (const file of dictionaryFiles) {
-    if (!existsSync(absolutePath(file))) continue
-    options.validSpellingWords.push(
-      ...(readFileSync(absolutePath(file), 'utf8')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/[-_/]/g, ' ')
-        .match(/\w+/g) ?? [])
-    )
+    const filePath = absolutePath(file)
+    if (!existsSync(filePath)) continue
+    const reader = createInterface({
+      input: createReadStream(filePath, 'utf8'),
+    })
+    reader.on('line', line => {
+      ;(
+        line
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/[-_/]/g, ' ')
+          .match(/\w+/g) ?? []
+      ).forEach(token => {
+        dictMap.set(token, true)
+      })
+    })
+    options.validSpellingWords.push(...Array.from(dictMap.keys()))
   }
 
   // Run rules
