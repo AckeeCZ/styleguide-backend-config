@@ -517,7 +517,7 @@ export const runDangerRules = async (
       ;(
         line
           .replace(/([a-z])([A-Z])/g, '$1 $2')
-          .replace(/[-_/]/g, ' ')
+          .replace(/[-_/@#]/g, ' ')
           .match(/\w+/g) ?? []
       ).forEach(token => {
         dictMap.set(token, true)
