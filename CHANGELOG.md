@@ -1,5 +1,13 @@
 # Changelog
 
+<a name="0.1.5"></a>
+## 0.1.5 (2020-06-03)
+
+### Added
+
+- ✨ Add more symbols to tokenizers [[7ca71bd](https://github.com/AckeeCZ/styleguide-backend-config/commit/7ca71bdd1d5af0ab42b2d89f76c91f1f2330d138)]
+
+
 <a name="0.1.4"></a>
 ## 0.1.4 (2020-06-03)
 
