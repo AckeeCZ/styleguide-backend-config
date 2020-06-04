@@ -291,7 +291,7 @@ const branchName: Checker = (danger, options) => {
   const sourceBranchName =
     danger.gitlab?.mr?.source_branch ?? danger.github?.pr?.head?.ref
   const [branchMatched, type, issueNumber] =
-    sourceBranchName.match(/([a-z]+)\/([0-9]+)(.*)/) ?? []
+    sourceBranchName?.match(/([a-z]+)\/([0-9]+)(.*)/) ?? []
   options.branchTrackerId = issueNumber
   if (!branchMatched) {
     return [{ branchName: sourceBranchName, type: OffenseType.BRANCH_FORMAT }]
