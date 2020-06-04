@@ -1,5 +1,17 @@
 # Changelog
 
+<a name="0.1.6"></a>
+## 0.1.6 (2020-06-04)
+
+### Fixed
+
+- 🐛 Check source branch name availability before use [[1263786](https://github.com/AckeeCZ/styleguide-backend-config/commit/1263786aec1c03af5f77bbb24330d6851046c0bb)]
+
+### Miscellaneous
+
+-  Merge pull request [#3](https://github.com/AckeeCZ/styleguide-backend-config/issues/3) from AckeeCZ/fix/running-danger-locally [[9b3670d](https://github.com/AckeeCZ/styleguide-backend-config/commit/9b3670d6d8550730c8bb6adfc2c209ba4042e044)]
+
+
 <a name="0.1.5"></a>
 ## 0.1.5 (2020-06-03)
 
