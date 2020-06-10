@@ -304,7 +304,8 @@ const branchName: Checker = (danger, options) => {
 }
 
 const branchDeleted: Checker = (danger, options) => {
-  if (danger.gitlab?.mr?.should_remove_source_branch) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
+  if (danger.gitlab?.mr?.should_remove_source_branch === true) {
     return [{ type: OffenseType.BRANCH_NOT_DELETED }]
   }
   return []
