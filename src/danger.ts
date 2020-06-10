@@ -70,6 +70,7 @@ const getTyposForText = async (
     mergeSettings(getDefaultSettings(), {
       ignoreWords,
       allowCompoundWords: true, // allow dangerfile as danger-file
+      caseSensitive: false,
     }),
     text,
     getLanguagesForExt(extname(filename))
