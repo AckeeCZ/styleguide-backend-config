@@ -1,5 +1,17 @@
 # Changelog
 
+<a name="0.1.7"></a>
+## 0.1.7 (2020-06-10)
+
+### Added
+
+- ✨ Ignore case on spell check [[da28ae4](https://github.com/AckeeCZ/styleguide-backend-config/commit/da28ae487b7b0f369068fd309dc2fff01b43996c)]
+
+### Fixed
+
+- 🐛 Remove cleaning source branch check [[70082e6](https://github.com/AckeeCZ/styleguide-backend-config/commit/70082e6370d570886cdd7dc2a53b117bc4437f43)]
+
+
 <a name="0.1.6"></a>
 ## 0.1.6 (2020-06-04)
 
