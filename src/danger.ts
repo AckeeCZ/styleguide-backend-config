@@ -1,4 +1,5 @@
 import { get } from 'https'
+import { once } from 'events'
 import * as Danger from 'danger'
 import {
   Text,
@@ -525,6 +526,7 @@ export const runDangerRules = async (
         dictMap.set(token, true)
       })
     })
+    await once(reader, 'close')
     options.validSpellingWords.push(...Array.from(dictMap.keys()))
   }
 
