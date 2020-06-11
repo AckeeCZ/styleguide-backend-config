@@ -1,5 +1,13 @@
 # Changelog
 
+<a name="0.1.8"></a>
+## 0.1.8 (2020-06-11)
+
+### Fixed
+
+- 🐛 Fix dictionary creation async bug [[7fe61ce](https://github.com/AckeeCZ/styleguide-backend-config/commit/7fe61ce752ced726e49eaca09d882ade061299df)]
+
+
 <a name="0.1.7"></a>
 ## 0.1.7 (2020-06-10)
 
