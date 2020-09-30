@@ -53,6 +53,7 @@ export = {
     // consistent code
     '@typescript-eslint/promise-function-async': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
+    '@typescript-eslint/explicit-module-boundary-types': 0,
     '@typescript-eslint/return-await': [2, 'in-try-catch'],
     'require-await': 2,
 

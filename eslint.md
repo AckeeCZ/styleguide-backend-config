@@ -61,6 +61,10 @@ There is no good reason to throw `async` around your code if you do not need awa
 
 While it (probably) makes the code more robust, it makes it extremely verbose and encourages to create interface or named typed for every fart of code in your application. Prefer type inference when possible for minimal conscious code.
 
+#### Disabled `@typescript-eslint/explicit-module-boundary-types`
+
+While more reasonable in limiting the rule, it still discourages from using type inference and implicit types.
+
 #### Modified `@typescript-eslint/return-await`
 
 There is (almost) no use for awaiting returned value, except for in try block, where you want to handle rejected state. We allow only in try block. Allowing or even requiring it everywhere results in people throwing async everywhere and we don't want that.
