@@ -77,7 +77,9 @@ Constructors should be pascal case. We get in trouble when using third-party cod
 
 ### Code smells
 
-Reduced severity to warning for the following rules: `sonarjs/cognitive-complexity`, `sonarjs/no-duplicate-string`, `@typescript-eslint/no-non-null-assertion`
+Reduced severity to warning for the following rules: `sonarjs/cognitive-complexity`, `sonarjs/no-duplicate-string`, `@typescript-eslint/no-non-null-assertion`.
+
+Reduced severity to warning for `@typescript-eslint/no-use-before-define`, because while this recommendation generally makes sense, most of critical issues are reported by TS compiler. The reports on usage in types themselves are usually not impactful.
 
 ### Compatibility fixes
 
