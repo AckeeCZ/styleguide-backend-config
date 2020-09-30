@@ -33,7 +33,7 @@ export = {
         asyncArrow: 'always',
       },
     ],
-    'no-extra-semi': 0,
+    '@typescript-eslint/no-extra-semi': 0,
     '@typescript-eslint/member-delimiter-style': 0,
 
     // error prevention
@@ -63,5 +63,10 @@ export = {
     'sonarjs/cognitive-complexity': 1,
     'sonarjs/no-duplicate-string': 1,
     '@typescript-eslint/no-non-null-assertion': 1,
+    '@typescript-eslint/no-use-before-define': 1,
+    'sonarjs/no-identical-functions': 1,
+
+    // compatibility fixes
+    '@typescript-eslint/camelcase': 0,
   },
 }
