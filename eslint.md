@@ -78,3 +78,9 @@ Constructors should be pascal case. We get in trouble when using third-party cod
 ### Code smells
 
 Reduced severity to warning for the following rules: `sonarjs/cognitive-complexity`, `sonarjs/no-duplicate-string`, `@typescript-eslint/no-non-null-assertion`
+
+### Compatibility fixes
+
+#### Disabled `@typescript-eslint/camelcase`
+
+The deprecated rule has been removed and we are waiting for an update from `standard-with-typescript`.

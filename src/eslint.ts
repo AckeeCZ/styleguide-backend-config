@@ -63,5 +63,7 @@ export = {
     'sonarjs/cognitive-complexity': 1,
     'sonarjs/no-duplicate-string': 1,
     '@typescript-eslint/no-non-null-assertion': 1,
+    // compatibility fixes
+    '@typescript-eslint/camelcase': 0,
   },
 }
