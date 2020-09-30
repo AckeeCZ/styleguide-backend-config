@@ -18,7 +18,7 @@ We enforce dangling commas for cleaner diffs, following the Airbnb standard.
 
 There is never a space seperating function name from the opening bracket and also no space after `function` keyword which stands as the function name. There is a space before `async`, since it is not a name but "modifier".
 
-#### Disabled `no-extra-semi`
+#### Disabled `@typescript-eslint/no-extra-semi`
 
 We leave that settings on prettier. Basically we want to achieve [`semi: "never", { "beforeStatementContinuationChars": "always" }`](https://eslint.org/docs/rules/semi#beforestatementcontinuationchars), but that does not seem to work with TS.
 
