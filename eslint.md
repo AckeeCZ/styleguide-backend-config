@@ -86,9 +86,3 @@ Reduced severity to warning for the following rules: `sonarjs/cognitive-complexi
 Reduced severity to warning for `@typescript-eslint/no-use-before-define`, because while this recommendation generally makes sense, most of critical issues are reported by TS compiler. The reports on usage in types themselves are usually not impactful.
 
 Reduced severity to warning for `sonarjs/no-identical-functions`, since it sometimes happens, that several trivial functions are reported as repeated, even though refactoring does not improve the code quality.
-
-### Compatibility fixes
-
-#### Disabled `@typescript-eslint/camelcase`
-
-The deprecated rule has been removed and we are waiting for an update from `standard-with-typescript`.
