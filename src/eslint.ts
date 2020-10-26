@@ -66,8 +66,5 @@ export = {
     '@typescript-eslint/no-non-null-assertion': 1,
     '@typescript-eslint/no-use-before-define': 1,
     'sonarjs/no-identical-functions': 1,
-
-    // compatibility fixes
-    '@typescript-eslint/camelcase': 0,
   },
 }
