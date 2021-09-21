@@ -55,7 +55,6 @@ export = {
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/explicit-module-boundary-types': 0,
     '@typescript-eslint/return-await': [2, 'in-try-catch'],
-    'require-await': 2,
 
     // naming conventions
     'new-cap': [2, { properties: false }],
