@@ -8,8 +8,8 @@ import {
   getDefaultSettings,
   mergeSettings,
   getLanguagesForExt,
-  TextDocumentOffset,
 } from 'cspell-lib'
+import type { TextDocumentOffset } from '@cspell/cspell-types'
 import { extname, resolve } from 'path'
 import { createInterface } from 'readline'
 import { readFileSync, existsSync, statSync, createReadStream } from 'fs'
@@ -31,7 +31,7 @@ const MSG_GUIDE =
 const COMMIT_GUIDE =
   'https://github.com/AckeeCZ/styleguide/blob/master/git/guides/authoring-commits.md'
 
-const EMAIL_REG = new RegExp('@(ack.ee|ackee.cz)$')
+const EMAIL_REG = /@(ack.ee|ackee.cz)$/
 
 const capitalize = (str: string) =>
   `${str.charAt(0).toUpperCase()}${str.substr(1)}`
@@ -80,9 +80,9 @@ const getTyposForText = async (
   return Text.calculateTextDocumentOffsets(filename, text, offsets)
 }
 
-const groupTypos = (typos: Text.TextDocumentOffset[]) =>
+const groupTypos = (typos: TextDocumentOffset[]) =>
   Object.values(
-    typos.reduce((r: Record<string, Text.TextDocumentOffset[]>, v) => {
+    typos.reduce((r: Record<string, TextDocumentOffset[]>, v) => {
       ;(r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
       return r
     }, {})
@@ -147,7 +147,7 @@ type Offense =
     }
   | {
       type: OffenseType.CODE_TYPO
-      typos: Text.TextDocumentOffset[]
+      typos: TextDocumentOffset[]
     }
   | {
       type: OffenseType.COMMIT_INVALID_AUTHOR_EMAIL
@@ -231,9 +231,7 @@ const formatMessage = (
     case OffenseType.CODE_TYPO: {
       const [first, ...rest] = m.typos
       const occurrence = `🔤 \`${first.text}\` might be a typo.`
-      const reps = `Same word is repeated ${
-        rest.length
-      } more times in ${rest
+      const reps = `Same word is repeated ${rest.length} more times in ${rest
         .map(t => `\`${t.uri ?? ''}:${t.row}\``)
         .join(', ')}`
       return {
@@ -254,7 +252,7 @@ const formatMessage = (
         message: `✉️ Commit ${m.sha} has a fishy email \`${
           m.found
         }\`. Does not [match](${COMMIT_GUIDE}) \`${
-          (EMAIL_REG as unknown) as string
+          EMAIL_REG as unknown as string
         }\`.`,
         severity: 'warn',
       }
@@ -551,7 +549,7 @@ export const runDangerRules = async (
   }
 
   // Report offenses
-  Object.values(OffenseType).map(type => {
+  Object.values(OffenseType).forEach(type => {
     const currentMessages = messages.filter(m => m.type === type)
     if (currentMessages.length === 0) return
     if (currentMessages.every(m => 'sha' in m)) {
