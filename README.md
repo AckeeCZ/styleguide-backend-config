@@ -67,15 +67,13 @@ Copy `.editorconfig` from this project
 
 ## Husky
 
-`.huskyrc.json`
+`.husky\pre-commit`
 
-```json
-{
-  "hooks": {
-    "pre-commit": "lint-staged",
-    "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-  }
-}
+```sh
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npx lint-staged
 ```
 
 `.lintstagedrc`
