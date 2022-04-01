@@ -69,10 +69,6 @@ While more reasonable in limiting the rule, it still discourages from using type
 
 There is (almost) no use for awaiting returned value, except for in try block, where you want to handle rejected state. We allow only in try block. Allowing or even requiring it everywhere results in people throwing async everywhere and we don't want that.
 
-#### Added `require-await`
-
-There is (almost) no reason to use `async` when there is no `await`.
-
 ### Naming conventions
 
 #### Modified `new-cap`
