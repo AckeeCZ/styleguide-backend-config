@@ -50,6 +50,8 @@ export = {
     '@typescript-eslint/no-floating-promises': [2, { ignoreVoid: true }],
     'no-void': [2, { allowAsStatement: true }],
 
+    // Less strictness over ??
+    '@typescript-eslint/prefer-nullish-coalescing': 1,
     // consistent code
     '@typescript-eslint/promise-function-async': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
