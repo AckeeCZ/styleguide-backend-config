@@ -31,9 +31,9 @@ Prettier config changed via `semi` and member delimiter [is not](https://github.
 
 ### Error prevention
 
-#### Disabled `@typescript-eslint/strict-boolean-expressions`
+#### Modified `@typescript-eslint/strict-boolean-expressions`
 
-Checking `null` or `undefined` explicitly for things that even cannot be falsely is a drag. We might consider tweaking via options to prevent errors with falsely values, disabling for now.
+Setting as a warning in usage of non-boolean types in expressions where a boolean is expected.
 
 #### Disabled `@typescript-eslint/no-explicit-any`
 
@@ -69,11 +69,15 @@ While more reasonable in limiting the rule, it still discourages from using type
 
 There is (almost) no use for awaiting returned value, except for in try block, where you want to handle rejected state. We allow only in try block. Allowing or even requiring it everywhere results in people throwing async everywhere and we don't want that.
 
+### Modified `@typescript-eslint/no-misused-promises`
+
+Modified `checkVoidReturn` option and disabled `arguments` checking an asynchronous function passed as argument where the parameter type expects a function that returns void.
+
 ### Naming conventions
 
-#### Modified `new-cap`
+#### Disabled `new-cap`
 
-Constructors should be pascal case. We get in trouble when using third-party code or with dynamic classes. For that case we allow new on lowercase, when constructor is as nested property which is usually the case.
+Disabled due to we were not able to change a dependent package's implementation for which it was reported.
 
 ### Code smells
 
@@ -83,4 +87,10 @@ Reduced severity to warning for `@typescript-eslint/no-use-before-define`, becau
 
 Reduced severity to warning for `sonarjs/no-identical-functions`, since it sometimes happens, that several trivial functions are reported as repeated, even though refactoring does not improve the code quality.
 
-Reduced severity to warning for @typescript-eslint/prefer-nullish-coalescing as logical OR operation can be desirable and is not equivalent with nullish coalescing.
+Reduced severity to warning for `@typescript-eslint/prefer-nullish-coalescing` as logical OR operation can be desirable and is not equivalent with nullish coalescing.
+
+Reduced severity to warning for `@typescript-eslint/no-var-requires` that will allow the require function to be used without causing an error in order to increase flexibility.
+
+Reduced severity to warning for `no-async-promise-executor` because it forces different style of writing handlers just because the function returns a promise instead of void.
+
+Reduced severity to warning for `sonarjs/no-unused-collection` because it is reported as false positive when the collection is used in different file.

@@ -40,7 +40,7 @@ export = {
     '@typescript-eslint/member-delimiter-style': 0,
 
     // error prevention
-    '@typescript-eslint/strict-boolean-expressions': 0,
+    '@typescript-eslint/strict-boolean-expressions': 1,
     '@typescript-eslint/no-explicit-any': 0,
     '@typescript-eslint/restrict-template-expressions': [
       2,
@@ -60,9 +60,20 @@ export = {
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/explicit-module-boundary-types': 0,
     '@typescript-eslint/return-await': [2, 'in-try-catch'],
+    '@typescript-eslint/no-misused-promises': {
+      checkConditionals: true,
+      checkVoidReturn: {
+        arguments: false,
+        attributes: true,
+        properties: true,
+        returns: true,
+        variables: true,
+      },
+      checkSpreads: true,
+    },
 
     // naming conventions
-    'new-cap': [2, { properties: false }],
+    'new-cap': 0,
 
     // code smells
     'sonarjs/cognitive-complexity': 1,
@@ -70,6 +81,9 @@ export = {
     '@typescript-eslint/no-non-null-assertion': 1,
     '@typescript-eslint/no-use-before-define': 1,
     'sonarjs/no-identical-functions': 1,
+    '@typescript-eslint/no-var-requires': 1,
+    'no-async-promise-executor': 1,
+    'sonarjs/no-unused-collection': 1,
   },
   settings: {
     node: {
