@@ -27,7 +27,7 @@
     "test": "jest",
     "test:coverage": "npm run test -- --collectCoverage",
     "lint": "eslint --ignore-path .gitignore '**/*.ts' -f codeframe",
-    "prepare": "npm run build && husky install"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^5.42.1",
@@ -37,7 +37,6 @@
     "eslint": "^8.27.0",
     "eslint-config-standard-with-typescript": "^23.0.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-n": "^15.0.0",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-sonarjs": "^0.16.0",
