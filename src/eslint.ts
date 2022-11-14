@@ -2,7 +2,6 @@ export = {
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint', 'sonarjs'],
   extends: [
-    'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'standard-with-typescript',
     'plugin:sonarjs/recommended',
@@ -10,6 +9,7 @@ export = {
     'plugin:import/typescript',
     'plugin:n/recommended',
     'plugin:sonarjs/recommended',
+    'eslint:recommended',
   ],
   parserOptions: {
     project: './tsconfig.json',
@@ -73,5 +73,10 @@ export = {
     '@typescript-eslint/no-non-null-assertion': 1,
     '@typescript-eslint/no-use-before-define': 1,
     'sonarjs/no-identical-functions': 1,
+  },
+  settings: {
+    node: {
+      tryExtensions: ['.ts', '.js', '.json', '.node'],
+    },
   },
 }
