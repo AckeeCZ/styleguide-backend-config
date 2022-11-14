@@ -1,14 +1,15 @@
 # Changelog
 
 <a name="0.1.8"></a>
+
 ## 0.1.8 (2020-06-11)
 
 ### Fixed
 
 - 🐛 Fix dictionary creation async bug [[7fe61ce](https://github.com/AckeeCZ/styleguide-backend-config/commit/7fe61ce752ced726e49eaca09d882ade061299df)]
 
-
 <a name="0.1.7"></a>
+
 ## 0.1.7 (2020-06-10)
 
 ### Added
@@ -19,8 +20,8 @@
 
 - 🐛 Remove cleaning source branch check [[70082e6](https://github.com/AckeeCZ/styleguide-backend-config/commit/70082e6370d570886cdd7dc2a53b117bc4437f43)]
 
-
 <a name="0.1.6"></a>
+
 ## 0.1.6 (2020-06-04)
 
 ### Fixed
@@ -29,18 +30,18 @@
 
 ### Miscellaneous
 
--  Merge pull request [#3](https://github.com/AckeeCZ/styleguide-backend-config/issues/3) from AckeeCZ/fix/running-danger-locally [[9b3670d](https://github.com/AckeeCZ/styleguide-backend-config/commit/9b3670d6d8550730c8bb6adfc2c209ba4042e044)]
-
+- Merge pull request [#3](https://github.com/AckeeCZ/styleguide-backend-config/issues/3) from AckeeCZ/fix/running-danger-locally [[9b3670d](https://github.com/AckeeCZ/styleguide-backend-config/commit/9b3670d6d8550730c8bb6adfc2c209ba4042e044)]
 
 <a name="0.1.5"></a>
+
 ## 0.1.5 (2020-06-03)
 
 ### Added
 
 - ✨ Add more symbols to tokenizers [[7ca71bd](https://github.com/AckeeCZ/styleguide-backend-config/commit/7ca71bdd1d5af0ab42b2d89f76c91f1f2330d138)]
 
-
 <a name="0.1.4"></a>
+
 ## 0.1.4 (2020-06-03)
 
 ### Changed
@@ -50,10 +51,10 @@
 
 ### Miscellaneous
 
--  Merge pull request [#2](https://github.com/AckeeCZ/styleguide-backend-config/issues/2) from AckeeCZ/perf/large-files [[e69c7da](https://github.com/AckeeCZ/styleguide-backend-config/commit/e69c7da3b6e9b52572a957a54d27b43d6920c00e)]
-
+- Merge pull request [#2](https://github.com/AckeeCZ/styleguide-backend-config/issues/2) from AckeeCZ/perf/large-files [[e69c7da](https://github.com/AckeeCZ/styleguide-backend-config/commit/e69c7da3b6e9b52572a957a54d27b43d6920c00e)]
 
 <a name="0.1.3"></a>
+
 ## 0.1.3 (2020-06-02)
 
 ### Added
@@ -66,10 +67,10 @@
 
 ### Miscellaneous
 
--  Merge pull request [#1](https://github.com/AckeeCZ/styleguide-backend-config/issues/1) from AckeeCZ/feat/yarn-support [[cdfffb8](https://github.com/AckeeCZ/styleguide-backend-config/commit/cdfffb8eb4be8db7a7224ac2d10745c5e66c9a91)]
-
+- Merge pull request [#1](https://github.com/AckeeCZ/styleguide-backend-config/issues/1) from AckeeCZ/feat/yarn-support [[cdfffb8](https://github.com/AckeeCZ/styleguide-backend-config/commit/cdfffb8eb4be8db7a7224ac2d10745c5e66c9a91)]
 
 <a name="0.1.2"></a>
+
 ## 0.1.2 (2020-06-01)
 
 ### Fixed
@@ -80,8 +81,8 @@
 
 - 📝 Fix travis link [[2f75750](https://github.com/AckeeCZ/styleguide-backend-config/commit/2f75750586a069a2aab2bc920d47ad8ea288d5e1)]
 
-
 <a name="0.1.1"></a>
+
 ## 0.1.1 (2020-06-01)
 
 ### Changed
@@ -96,8 +97,8 @@
 
 - 📝 Update install instructions [[906708e](https://github.com/AckeeCZ/styleguide-backend-config/commit/906708edc1057a843d2bb72aa9344ee1c7a5c9ff)]
 
-
 <a name="0.1.0"></a>
+
 ## 0.1.0 (2020-05-28)
 
 ### Added
@@ -125,5 +126,3 @@
 - 🐛 Fix prettier eslint inconsistencies with semi [[6333a4b](https://github.com/AckeeCZ/styleguide-backend-config/commit/6333a4b616c13c58544459b4f679ae01cd5f950e)]
 - 🐛 Fix typos reporting [[4f12b2a](https://github.com/AckeeCZ/styleguide-backend-config/commit/4f12b2aed1ab6ea85fbf7038350058a0a88cba5b)]
 - 🐛 Fix message enum typo [[ba88ce5](https://github.com/AckeeCZ/styleguide-backend-config/commit/ba88ce52c3e09f41c0ae6b7474742ac79b32fbc0)]
-
-

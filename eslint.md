@@ -10,7 +10,7 @@ We extend `eslint`/`typescript` recommended, `standard-with-typescript` and `plu
 
 There are inconsistencies in TS code between prettier and ESLint with TS parser (type ternary, template literals). Prettier is usually correct, we leave it to prettier and disable rule to avoid conflicts.
 
-#### Modified `comma-dangle`
+#### Modified `@typescript-eslint/comma-dangle`
 
 We enforce dangling commas for cleaner diffs, following the Airbnb standard.
 

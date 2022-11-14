@@ -8,8 +8,8 @@ import {
   getDefaultSettings,
   mergeSettings,
   getLanguagesForExt,
+  TextDocumentOffset,
 } from 'cspell-lib'
-import type { TextDocumentOffset } from '@cspell/cspell-types'
 import { extname, resolve } from 'path'
 import { createInterface } from 'readline'
 import { readFileSync, existsSync, statSync, createReadStream } from 'fs'
@@ -103,6 +103,7 @@ enum OffenseType {
   COMMIT_MERGE = 'COMMIT_MERGE',
   CODE_TYPO = 'CODE_TYPO',
 }
+
 type Offense =
   | {
       type: OffenseType.BRANCH_FORMAT

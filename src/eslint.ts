@@ -3,9 +3,12 @@ export = {
   plugins: ['@typescript-eslint', 'sonarjs'],
   extends: [
     'eslint:recommended',
-    'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
     'standard-with-typescript',
+    'plugin:sonarjs/recommended',
+    'plugin:import/recommended',
+    'plugin:import/typescript',
+    'plugin:n/recommended',
     'plugin:sonarjs/recommended',
   ],
   parserOptions: {
@@ -14,17 +17,20 @@ export = {
   ignorePatterns: [],
   rules: {
     // code formatting
-    '@typescript-eslint/indent': 0,
-    'comma-dangle': [
-      2,
+    '@typescript-eslint/comma-dangle': [
+      'error',
       {
-        arrays: 'always-multiline',
-        objects: 'always-multiline',
-        imports: 'always-multiline',
-        exports: 'always-multiline',
+        arrays: 'only-multiline',
+        objects: 'only-multiline',
+        imports: 'only-multiline',
+        exports: 'only-multiline',
         functions: 'never',
+        enums: 'only-multiline',
+        generics: 'only-multiline',
+        tuples: 'only-multiline',
       },
     ],
+    '@typescript-eslint/indent': 0,
     '@typescript-eslint/space-before-function-paren': [
       2,
       {
