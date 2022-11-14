@@ -2,14 +2,11 @@ export = {
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint', 'sonarjs'],
   extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
     'standard-with-typescript',
     'plugin:sonarjs/recommended',
-    'plugin:import/recommended',
-    'plugin:import/typescript',
-    'plugin:n/recommended',
-    'plugin:sonarjs/recommended',
-    'eslint:recommended',
   ],
   parserOptions: {
     project: './tsconfig.json',
@@ -77,6 +74,7 @@ export = {
   settings: {
     node: {
       tryExtensions: ['.ts', '.js', '.json', '.node'],
+      resolvePaths: [__dirname],
     },
   },
 }
