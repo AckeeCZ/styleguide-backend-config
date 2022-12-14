@@ -60,17 +60,20 @@ export = {
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/explicit-module-boundary-types': 0,
     '@typescript-eslint/return-await': [2, 'in-try-catch'],
-    '@typescript-eslint/no-misused-promises': {
-      checkConditionals: true,
-      checkVoidReturn: {
-        arguments: false,
-        attributes: true,
-        properties: true,
-        returns: true,
-        variables: true,
+    '@typescript-eslint/no-misused-promises': [
+      'error',
+      {
+        checkConditionals: true,
+        checkVoidReturn: {
+          arguments: false,
+          attributes: true,
+          properties: true,
+          returns: true,
+          variables: true,
+        },
+        checkSpreads: true,
       },
-      checkSpreads: true,
-    },
+    ],
 
     // naming conventions
     'new-cap': 0,
