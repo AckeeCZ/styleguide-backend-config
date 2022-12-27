@@ -44,7 +44,7 @@ type Gitmoji = Record<'emoji' | 'code', string>
 const getGitmoji = () =>
   new Promise<Gitmoji[]>((resolve, reject) => {
     get(
-      'https://raw.githubusercontent.com/carloscuesta/gitmoji/master/src/data/gitmojis.json',
+      'https://raw.githubusercontent.com/carloscuesta/gitmoji/master/packages/gitmojis/src/gitmojis.json',
       res => {
         res.setEncoding('utf8')
         let body = ''
@@ -363,7 +363,7 @@ const commitMessageFormat: Checker = (danger, options) => {
           length: commitHeader.length,
         })
       }
-      if (usedGitmoji) {
+      if (usedGitmoji != null) {
         const expectedMessage = `${usedGitmoji.emoji} ${capitalize(title)}`
         if (expectedMessage !== commitHeader) {
           const diff = `
@@ -396,7 +396,7 @@ const commitEmail: Checker = (danger, options) => {
   danger.git.commits
     .filter(c => !options.skipSha?.includes(c.sha))
     .forEach(commit => {
-      if (!commit.author.email.match(EMAIL_REG)) {
+      if (commit.author.email.match(EMAIL_REG) == null) {
         offenses.push({
           type: OffenseType.COMMIT_INVALID_AUTHOR_EMAIL,
           sha: commit.sha,
