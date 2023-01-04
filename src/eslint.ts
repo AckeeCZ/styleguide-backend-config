@@ -68,7 +68,7 @@ export = {
           arguments: false,
           attributes: true,
           properties: true,
-          returns: true,
+          returns: false,
           variables: true,
         },
         checkSpreads: true,
