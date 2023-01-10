@@ -40,7 +40,6 @@ export = {
     '@typescript-eslint/member-delimiter-style': 0,
 
     // error prevention
-    '@typescript-eslint/strict-boolean-expressions': 1,
     '@typescript-eslint/no-explicit-any': 0,
     '@typescript-eslint/restrict-template-expressions': [
       2,
