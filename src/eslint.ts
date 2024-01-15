@@ -7,6 +7,7 @@ export = {
     'plugin:@typescript-eslint/recommended',
     'standard-with-typescript',
     'plugin:sonarjs/recommended',
+    'plugin:security/recommended-legacy',
   ],
   parserOptions: {
     project: './tsconfig.json',
@@ -39,6 +40,7 @@ export = {
     '@typescript-eslint/no-extra-semi': 0,
     '@typescript-eslint/member-delimiter-style': 0,
     // error prevention
+    'security/detect-object-injection': 0,
     '@typescript-eslint/no-explicit-any': 0,
     '@typescript-eslint/strict-boolean-expressions': 0,
     '@typescript-eslint/restrict-template-expressions': [
@@ -73,7 +75,6 @@ export = {
         checkSpreads: true,
       },
     ],
-
     // naming conventions
     'new-cap': 0,
 
