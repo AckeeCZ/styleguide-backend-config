@@ -98,6 +98,7 @@ export = {
     '@typescript-eslint/no-use-before-define': 1,
     'sonarjs/no-identical-functions': 1,
     '@typescript-eslint/no-var-requires': 1,
+    '@typescript-eslint/require-array-sort-compare': 1,
     'no-async-promise-executor': 1,
     'sonarjs/no-unused-collection': 1,
   },
