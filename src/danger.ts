@@ -83,7 +83,7 @@ const getTyposForText = async (
 const groupTypos = (typos: TextDocumentOffset[]) =>
   Object.values(
     typos.reduce((r: Record<string, TextDocumentOffset[]>, v) => {
-      ;(r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
+      (r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
       return r
     }, {})
   )
@@ -303,8 +303,7 @@ const branchName: Checker = (danger, options) => {
   return []
 }
 
-const branchDeleted: Checker = (danger, options) => {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
+const branchDeleted: Checker = (danger, _options) => {
   if (danger.gitlab?.mr?.should_remove_source_branch === true) {
     return [{ type: OffenseType.BRANCH_NOT_DELETED }]
   }
@@ -424,7 +423,7 @@ const commitTypos: Checker = async (danger, options) => {
             type: OffenseType.COMMIT_MESSAGE_TYPO,
             word: typo.text,
             sha: commit.sha,
-          } as const)
+          }) as const
       )
     )
   }
@@ -481,7 +480,7 @@ const codeTypos: Checker = async (danger, options) => {
     )
   }
   return groupTypos(codeTypos).map(
-    typos => ({ type: OffenseType.CODE_TYPO, typos } as const)
+    typos => ({ type: OffenseType.CODE_TYPO, typos }) as const
   )
 }
 
@@ -497,7 +496,7 @@ const rules = {
 }
 
 export const runDangerRules = async (
-  { danger, warn, markdown, schedule, message }: typeof Danger,
+  { danger, warn, markdown, message }: typeof Danger,
   options: Options = {}
 ) => {
   const messages: Offense[] = []
@@ -516,7 +515,7 @@ export const runDangerRules = async (
       input: createReadStream(filePath, 'utf8'),
     })
     reader.on('line', line => {
-      ;(
+      (
         line
           .replace(/([a-z])([A-Z])/g, '$1 $2')
           .replace(/[-_/@#]/g, ' ')
@@ -556,7 +555,7 @@ export const runDangerRules = async (
     if (currentMessages.every(m => 'sha' in m)) {
       const grouped = currentMessages.reduce(
         (acc: Record<string, Offense[]>, val: any) => {
-          const { sha, ...dataWithoutSha } = val
+          const { sha: _sha, ...dataWithoutSha } = val
           const key = JSON.stringify(dataWithoutSha)
           ;(acc[key] = acc[key] || []).push(val)
           return acc
@@ -575,12 +574,12 @@ export const runDangerRules = async (
           return msg.message
         })
         .join('\n\n')
-      ;({ fail, message, warn }[formatMessage(currentMessages[0]).severity](
+      ;({ fail, message, warn })[formatMessage(currentMessages[0]).severity](
         condensedMsg
-      ))
+      )
     } else {
       currentMessages.map(formatMessage).forEach(msg => {
-        ;({ fail, message, warn }[msg.severity](msg.message, msg.url, msg.ln))
+        ({ fail, message, warn })[msg.severity](msg.message, msg.url, msg.ln)
       })
     }
   })

@@ -5,8 +5,7 @@ export = {
     'eslint:recommended',
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
-    'standard-with-typescript',
-    'plugin:sonarjs/recommended',
+    'plugin:sonarjs/recommended-legacy',
     'plugin:security/recommended-legacy',
   ],
   parserOptions: {
@@ -15,6 +14,18 @@ export = {
   ignorePatterns: [],
   rules: {
     // code formatting
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        args: 'all',
+        argsIgnorePattern: '^_',
+        caughtErrors: 'all',
+        caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
     '@typescript-eslint/comma-dangle': [
       'error',
       {
@@ -48,11 +59,13 @@ export = {
       {
         allowNumber: true,
         allowBoolean: false,
-        allowNullable: false,
+        allowNullish: false,
       },
     ],
     '@typescript-eslint/no-floating-promises': [2, { ignoreVoid: true }],
     'no-void': [2, { allowAsStatement: true }],
+    'no-fallthrough': 1,
+    'no-constant-condition': [1, { checkLoops: false }],
 
     // Less strictness over ??
     '@typescript-eslint/prefer-nullish-coalescing': 1,
@@ -64,15 +77,15 @@ export = {
     '@typescript-eslint/no-misused-promises': [
       'error',
       {
-        checkConditionals: true,
-        checkVoidReturn: {
+        checksConditionals: true,
+        checksVoidReturn: {
           arguments: false,
           attributes: true,
           properties: true,
           returns: false,
           variables: true,
         },
-        checkSpreads: true,
+        checksSpreads: true,
       },
     ],
     // naming conventions
@@ -85,6 +98,7 @@ export = {
     '@typescript-eslint/no-use-before-define': 1,
     'sonarjs/no-identical-functions': 1,
     '@typescript-eslint/no-var-requires': 1,
+    '@typescript-eslint/require-array-sort-compare': 1,
     'no-async-promise-executor': 1,
     'sonarjs/no-unused-collection': 1,
   },

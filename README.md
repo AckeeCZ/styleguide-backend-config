@@ -1,5 +1,7 @@
 <div align="center">
 
+![](logo.png)
+
 # Ackee styleguide: Backend config
 
 Configuration files for [styleguide](https://github.com/AckeeCZ/styleguide) enforcement tools
@@ -26,8 +28,8 @@ module.exports = require('@ackee/styleguide-backend-config/eslint')
 ```jsonc
 {
   // npm tasks
-  "cs:eslint:check": "eslint --ignore-path .gitignore '**/*.ts' -f codeframe",
-  "cs:eslint:fix": "npm run cs:eslint:check -- --fix"
+  "eslint:check": "eslint --ignore-path .gitignore '**/*.ts' -f codeframe",
+  "eslint:fix": "npm run eslint:check -- --fix",
 }
 ```
 
@@ -46,22 +48,8 @@ module.exports = require('@ackee/styleguide-backend-config/prettier')
 ```jsonc
 {
   // npm tasks
-  "cs:prettier:check": "prettier --ignore-path .gitignore --check '**/*.{ts,js,json,md}'",
-  "cs:prettier:fix": "npm run cs:prettier:check -- --write '**/*.{ts,js,json,md}'"
-}
-```
-
-## Editorconfig
-
-`npm install -D eclint`
-
-Copy `.editorconfig` from this project
-
-```jsonc
-{
-  // npm tasks
-  "cs:eclint:check": "eclint check '**/*'",
-  "cs:eclint:fix": "eclint fix '**/*'"
+  "prettier:check": "prettier --ignore-path .gitignore --check '**/*.{ts,js,json,md}'",
+  "prettier:fix": "npm run prettier:check -- --write '**/*.{ts,js,json,md}'",
 }
 ```
 
@@ -81,8 +69,7 @@ npx lint-staged
 ```json
 {
   "*.ts": ["prettier --write", "eslint --fix"],
-  "*.{ts,js,json,md}": "prettier --write",
-  "*": ["eclint fix", "eclint check"]
+  "*.{ts,js,json,md}": "prettier --write"
 }
 ```
 
