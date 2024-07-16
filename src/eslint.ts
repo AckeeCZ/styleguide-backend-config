@@ -64,7 +64,7 @@ export = {
     ],
     '@typescript-eslint/no-floating-promises': [2, { ignoreVoid: true }],
     'no-void': [2, { allowAsStatement: true }],
-    'no-fallthrough': 2,
+    'no-fallthrough': 1,
     'no-constant-condition': [1, { checkLoops: false }],
 
     // Less strictness over ??
