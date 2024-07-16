@@ -5,8 +5,7 @@ export = {
     'eslint:recommended',
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
-    'standard-with-typescript',
-    'plugin:sonarjs/recommended',
+    'plugin:sonarjs/recommended-legacy',
     'plugin:security/recommended-legacy',
   ],
   parserOptions: {
@@ -15,6 +14,18 @@ export = {
   ignorePatterns: [],
   rules: {
     // code formatting
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        args: 'all',
+        argsIgnorePattern: '^_',
+        caughtErrors: 'all',
+        caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
     '@typescript-eslint/comma-dangle': [
       'error',
       {
@@ -48,7 +59,7 @@ export = {
       {
         allowNumber: true,
         allowBoolean: false,
-        allowNullable: false,
+        allowNullish: false,
       },
     ],
     '@typescript-eslint/no-floating-promises': [2, { ignoreVoid: true }],
@@ -64,15 +75,15 @@ export = {
     '@typescript-eslint/no-misused-promises': [
       'error',
       {
-        checkConditionals: true,
-        checkVoidReturn: {
+        checksConditionals: true,
+        checksVoidReturn: {
           arguments: false,
           attributes: true,
           properties: true,
           returns: false,
           variables: true,
         },
-        checkSpreads: true,
+        checksSpreads: true,
       },
     ],
     // naming conventions
