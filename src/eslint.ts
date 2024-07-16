@@ -15,7 +15,7 @@ export = {
   rules: {
     // code formatting
     '@typescript-eslint/no-unused-vars': [
-      'error',
+      'warn',
       {
         args: 'all',
         argsIgnorePattern: '^_',
@@ -64,6 +64,8 @@ export = {
     ],
     '@typescript-eslint/no-floating-promises': [2, { ignoreVoid: true }],
     'no-void': [2, { allowAsStatement: true }],
+    'no-fallthrough': 2,
+    'no-constant-condition': [1, { checkLoops: false }],
 
     // Less strictness over ??
     '@typescript-eslint/prefer-nullish-coalescing': 1,
