@@ -3,7 +3,9 @@
   "description": "styleguide-backend-config",
   "version": "0.5.1-alpha.1",
   "author": "Jaroslav Šmolík <grissius@gmail.com>",
-  "contributors": [],
+  "contributors": [
+    "Pavel Švagr <s.pavel66@gmail.com>"
+  ],
   "files": [
     "dist/*",
     "danger.js",
