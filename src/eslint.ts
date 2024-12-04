@@ -64,8 +64,20 @@ export = {
     ],
     // naming conventions
     'new-cap': 0,
+    'sonarjs/class-name': 0,
+    'sonarjs/new-cap': 0,
 
     // code smells
+    'sonarjs/assertions-in-tests': 0,
+    'sonarjs/todo-tag': 0,
+    'sonarjs/no-base-to-string': 0,
+    'sonarjs/pseudo-random': 0,
+    'sonarjs/no-os-command-from-path': 0,
+    'sonarjs/sonar-prefer-optional-chain': 0,
+    'sonarjs/no-ignored-exceptions': 0,
+    'sonarjs/no-misused-promises': 0,
+    'sonarjs/redundant-type-aliases': 0,
+
     'sonarjs/cognitive-complexity': 'warn',
     'sonarjs/no-duplicate-string': 'warn',
     'sonarjs/no-identical-functions': 'warn',
