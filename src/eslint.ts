@@ -41,9 +41,9 @@ export = {
     'no-fallthrough': 'warn',
     'no-constant-condition': ['warn', { checkLoops: false }],
 
-    // Less strictness over ??
     '@typescript-eslint/prefer-nullish-coalescing': 'warn',
     // consistent code
+    'no-extra-semi': 0,
     '@typescript-eslint/promise-function-async': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/explicit-module-boundary-types': 0,
@@ -77,7 +77,9 @@ export = {
     'sonarjs/no-ignored-exceptions': 0,
     'sonarjs/no-misused-promises': 0,
     'sonarjs/redundant-type-aliases': 0,
-
+    'sonarjs/sonar-no-unused-vars': 0,
+    'sonarjs/slow-regex': 0,
+    'security/detect-non-literal-fs-filename': 0,
     'sonarjs/cognitive-complexity': 'warn',
     'sonarjs/no-duplicate-string': 'warn',
     'sonarjs/no-identical-functions': 'warn',

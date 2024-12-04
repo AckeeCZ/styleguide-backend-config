@@ -3,7 +3,7 @@ import { once } from 'events'
 import * as Danger from 'danger'
 import {
   Text,
-  validateText,
+  spellCheckDocument,
   constructSettingsForText,
   getDefaultSettings,
   mergeSettings,
@@ -13,6 +13,7 @@ import {
 import { extname, resolve } from 'path'
 import { createInterface } from 'readline'
 import { readFileSync, existsSync, statSync, createReadStream } from 'fs'
+
 const branchTypes = [
   'fix',
   'feat',
@@ -34,7 +35,7 @@ const COMMIT_GUIDE =
 const EMAIL_REG = /@(ack.ee|ackee.cz)$/
 
 const capitalize = (str: string) =>
-  `${str.charAt(0).toUpperCase()}${str.substr(1)}`
+  `${str.charAt(0).toUpperCase()}${str.substring(1)}`
 const codes = (str: string) =>
   Array.from(Array(str.length).keys())
     .map(i => `\\${str.charCodeAt(i)}`)
@@ -76,14 +77,19 @@ const getTyposForText = async (
     text,
     getLanguagesForExt(extname(filename))
   )
-  const offsets = await validateText(text, config)
+  const checkResult = await spellCheckDocument(
+    { text, uri: filename },
+    { generateSuggestions: false },
+    config
+  )
+  const offsets = checkResult.issues
   return Text.calculateTextDocumentOffsets(filename, text, offsets)
 }
 
 const groupTypos = (typos: TextDocumentOffset[]) =>
   Object.values(
     typos.reduce((r: Record<string, TextDocumentOffset[]>, v) => {
-      (r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
+      ;(r[v.text.toLowerCase()] || (r[v.text.toLowerCase()] = [])).push(v)
       return r
     }, {})
   )
@@ -283,6 +289,7 @@ interface Options {
   skipRules?: Array<keyof typeof rules>
   validSpellingWords?: string[]
 }
+
 type Checker = (
   danger: Danger.DangerDSLType,
   options: Options
@@ -291,8 +298,9 @@ type Checker = (
 const branchName: Checker = (danger, options) => {
   const sourceBranchName =
     danger.gitlab?.mr?.source_branch ?? danger.github?.pr?.head?.ref
-  const [branchMatched, type, issueNumber] =
-    sourceBranchName?.match(/([a-z]+)\/([0-9]+)(.*)/) ?? []
+  const [branchMatched, type, issueNumber] = sourceBranchName
+    ? (/([a-z]+)\/(\d+)(.*)/.exec(sourceBranchName) ?? [])
+    : []
   options.branchTrackerId = issueNumber
   if (!branchMatched) {
     return [{ branchName: sourceBranchName, type: OffenseType.BRANCH_FORMAT }]
@@ -316,9 +324,9 @@ const commitReferences: Checker = (danger, options) => {
   danger.git.commits
     .filter(c => !options.skipSha?.includes(c.sha))
     .forEach(commit => {
-      const commitsReferences = (
-        commit.message.match(/(?:#)[0-9]+/g) ?? []
-      ).map(x => x.substr(1))
+      const commitsReferences = (commit.message.match(/(?:#)\d]+/g) ?? []).map(
+        x => x.substring(1)
+      )
 
       options.commitTrackerIds?.push(
         ...commitsReferences.filter(r => r !== options.branchTrackerId)
@@ -351,7 +359,7 @@ const commitMessageFormat: Checker = (danger, options) => {
     .filter(c => !options.skipSha?.includes(c.sha))
     .forEach(commit => {
       const commitHeader = commit.message.split('\n')[0]
-      const [, symbol, title] = commitHeader.match(/^\s*(\S*)\s*(.*)$/) ?? []
+      const [, symbol, title] = /^\s*(\S*)\s*(.*)$/.exec(commitHeader) ?? []
       const usedGitmoji = options.gitmojis?.find(
         g => g.code === symbol || g.emoji === symbol
       )
@@ -369,7 +377,7 @@ const commitMessageFormat: Checker = (danger, options) => {
 \`\`\`diff
 - ${commitHeader}
 + ${expectedMessage}${commit.message
-            .substr(commitHeader.length)
+            .substring(commitHeader.length)
             .replace(/\n/g, '\n  ')}
 \`\`\`
 `
@@ -395,7 +403,7 @@ const commitEmail: Checker = (danger, options) => {
   danger.git.commits
     .filter(c => !options.skipSha?.includes(c.sha))
     .forEach(commit => {
-      if (commit.author.email.match(EMAIL_REG) == null) {
+      if (EMAIL_REG.exec(commit.author.email) == null) {
         offenses.push({
           type: OffenseType.COMMIT_INVALID_AUTHOR_EMAIL,
           sha: commit.sha,
@@ -496,7 +504,7 @@ const rules = {
 }
 
 export const runDangerRules = async (
-  { danger, warn, markdown, message }: typeof Danger,
+  { danger, warn, markdown, message, fail }: typeof Danger,
   options: Options = {}
 ) => {
   const messages: Offense[] = []
@@ -515,7 +523,7 @@ export const runDangerRules = async (
       input: createReadStream(filePath, 'utf8'),
     })
     reader.on('line', line => {
-      (
+      ;(
         line
           .replace(/([a-z])([A-Z])/g, '$1 $2')
           .replace(/[-_/@#]/g, ' ')
@@ -557,7 +565,10 @@ export const runDangerRules = async (
         (acc: Record<string, Offense[]>, val: any) => {
           const { sha: _sha, ...dataWithoutSha } = val
           const key = JSON.stringify(dataWithoutSha)
-          ;(acc[key] = acc[key] || []).push(val)
+          if (!acc[key]) {
+            acc[key] = []
+          }
+          acc[key].push(val)
           return acc
         },
         {}
@@ -579,7 +590,7 @@ export const runDangerRules = async (
       )
     } else {
       currentMessages.map(formatMessage).forEach(msg => {
-        ({ fail, message, warn })[msg.severity](msg.message, msg.url, msg.ln)
+        ;({ fail, message, warn })[msg.severity](msg.message, msg.url, msg.ln)
       })
     }
   })
