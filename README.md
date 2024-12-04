@@ -30,8 +30,6 @@ module.exports = require('@ackee/styleguide-backend-config/eslint')
 }
 ```
 
-For detailed rules description, see [eslint](eslint.md)
-
 ## Prettier
 
 `npm install -D prettier`
