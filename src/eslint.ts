@@ -73,8 +73,6 @@ export = {
     'sonarjs/no-base-to-string': 0,
     'sonarjs/pseudo-random': 0,
     'sonarjs/no-os-command-from-path': 0,
-    'sonarjs/sonar-prefer-optional-chain': 0,
-    'sonarjs/no-ignored-exceptions': 0,
     'sonarjs/no-misused-promises': 0,
     'sonarjs/redundant-type-aliases': 0,
     'sonarjs/sonar-no-unused-vars': 0,
