@@ -48,31 +48,6 @@ module.exports = require('@ackee/styleguide-backend-config/prettier')
 }
 ```
 
-## Danger
-
-`dangerfile.ts`
-
-```typescript
-import {
-  danger,
-  warn,
-  message,
-  fail,
-  markdown,
-  schedule,
-  peril,
-  results,
-} from 'danger'
-import { runDangerRules } from '@ackee/styleguide-backend-config/danger'
-
-void runDangerRules(
-  { danger, warn, message, fail, markdown, schedule, peril, results },
-  {
-    /* pass options */
-  }
-)
-```
-
 ## License
 
 This project is licensed under [MIT](./LICENSE).
