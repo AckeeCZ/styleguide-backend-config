@@ -1,0 +1,22 @@
+# This workflow is performing prettier and lint checks on it's base code using it's own configuration
+
+name: Test
+
+on: [push]
+
+jobs:
+  run-eslint-and-prettier:
+    strategy:
+      matrix:
+        version: [ 18, 20, 22 ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.version }}
+          registry-url: https://registry.npmjs.org/
+      - run: npm install
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run prettier
