@@ -45,6 +45,7 @@
     "prettier": "^3.4.2"
   },
   "devDependencies": {
+    "@types/node": "^22.13.10",
     "typescript": "^5.4.2"
   }
 }
