@@ -4,4 +4,12 @@ export = {
   semi: false,
   singleQuote: true,
   arrowParens: 'avoid',
+  overrides: [
+    {
+      files: ['**/*.jsonc'],
+      options: {
+        trailingComma: 'none',
+      },
+    },
+  ],
 }
