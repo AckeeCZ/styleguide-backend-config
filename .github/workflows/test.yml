@@ -8,7 +8,7 @@ jobs:
   run-eslint-and-prettier:
     strategy:
       matrix:
-        version: [ 18, 20, 22 ]
+        version: [ 20, 22 ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
