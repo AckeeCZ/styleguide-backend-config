@@ -87,6 +87,21 @@ export = {
     '@typescript-eslint/no-var-requires': 'warn',
     '@typescript-eslint/require-array-sort-compare': 'warn',
     'no-async-promise-executor': 'warn',
+
+    // Deduplicate overlapping rules
+    'sonarjs/unused-import': 0, // -> @typescript-eslint/no-unused-vars
+    'sonarjs/no-var': 0, // -> no-var
+    'sonarjs/use-isnan': 0, // -> use-isnan
+    'sonarjs/prefer-spread': 0, // -> prefer-spread
+    'sonarjs/no-unused-expressions': 0, // -> @typescript-eslint/no-unused-expressions
+    'sonarjs/prefer-namespace-keyword': 0, // -> @typescript-eslint/prefer-namespace-keyword
+    'sonarjs/prefer-nullish-coalescing': 0, // -> @typescript-eslint/prefer-nullish-coalescing
+    'sonarjs/sonar-no-fallthrough': 0, // -> no-fallthrough
+    'sonarjs/sonar-no-control-regex': 0, // -> no-control-regex
+    'sonarjs/sonar-no-empty-character-class': 0, // -> no-empty-character-class
+    'sonarjs/sonar-no-invalid-regexp': 0, // -> no-invalid-regexp
+    'sonarjs/sonar-no-misleading-character-class': 0, // -> no-misleading-character-class
+    'sonarjs/sonar-no-regex-spaces': 0, // -> no-regex-spaces
   },
   settings: {
     node: {
